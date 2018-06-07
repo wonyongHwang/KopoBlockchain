@@ -1,3 +1,6 @@
+# author : wonyong hwang (Dept. of Smart Finance, Korea Polytechnics College)
+# Description : implementation of blockchain for eductaional purposes
+# date, version : 06-07-18 0.6
 
 import hashlib
 
