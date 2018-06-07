@@ -3,7 +3,6 @@
 # date, version : 06-07-18 0.6
 
 import hashlib
-
 import time
 import csv
 import random
@@ -205,7 +204,7 @@ def readTx(txFilePath):
         with open(txFilePath, 'r',  newline='') as file:
             txReader = csv.reader(file)
             for row in txReader:
-                if row[0] == '0': # 블록체인에 미포함된 거래만 조회
+                if row[0] == '0': # 블록체인??미포?�된 거래�?조회
                     line = txData(row[0],row[1],row[2],row[3],row[4])
                     importedTx.append(line)
         print("Pulling txData from csv...")
@@ -428,12 +427,15 @@ def compareMerge(bcDict):
             blockReader = csv.reader(file)
             last_line_number = row_count(g_bcFileName)
             for line in blockReader:
-                if blockReader.line_num == 1:
                     block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                     heldBlock.append(block)
-                elif blockReader.line_num == last_line_number:
-                    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
-                    heldBlock.append(block)
+                #if blockReader.line_num == 1:
+                #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
+                #    heldBlock.append(block)
+                #elif blockReader.line_num == last_line_number:
+                #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
+                #    heldBlock.append(block)
+
     except:
         print("file open error in compareMerge or No database exists")
         return -1
@@ -455,17 +457,33 @@ def compareMerge(bcDict):
         print('Genesis Block Incorrect')
         return -1
 
+    # chekc if broadcasted new block,1 ahead than > last held block
+
     if isValidNewBlock(bcToValidateForBlock[-1],heldBlock[-1]) == False:
 
         # lastest block == broadcasted last block
         if isSameBlock(heldBlock[-1], bcToValidateForBlock[-1]) == True:
-            print('lastest block == broadcasted last block')
+            print('lastest block == broadcasted last block, already updated')
             return 2
-        # n
-        else:
+        # select longest chain
+        elif len(bcToValidateForBlock) > len(heldBlock):
+            # validation
+            for i in range(0,len(heldBlock)):
+                if isSameBlock(heldBlock[i],bcToValidateForBlock[i]) == False:
+                    print("Block Information Incorrect #1")
+                    return -1
+        elif len(bcToValidateForBlock) < len(heldBlock):
+            # validation
+            for i in range(0,len(bcToValidateForBlock)):
+                if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
             print("Block Information Incorrect #1")
             return -1
+            print("We have a longer chain")
+            return 3
     else:
+            print("Block Information Incorrect #2")
+            return -1
+    else: # very normal case (ex> we have index 100 and receive index 101 ...)
         tempBlocks = [bcToValidateForBlock[0]]
         for i in range(1, len(bcToValidateForBlock)):
             if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
@@ -475,7 +493,8 @@ def compareMerge(bcDict):
                 return -1
 
         print("new block good")
-        # save it to csv
+
+        # [START] save it to csv
         blockchainList = []
         for block in bcToValidateForBlock:
             blockList = [block.index, block.previousHash, str(block.timestamp), block.data, block.currentHash, block.proof]
@@ -483,6 +502,7 @@ def compareMerge(bcDict):
         with open(g_bcFileName, "w", newline='') as file:
             writer = csv.writer(file)
             writer.writerows(blockchainList)
+        # [END] save it to csv
         return 1
 
 
@@ -516,7 +536,7 @@ class myHandler(BaseHTTPRequestHandler):
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
 
             elif None != re.search('/block/generateBlock', self.path):
-                #mine() # thoread 로 아래 코드와 같이 분리해야함
+                #mine() # thoread �??�래 코드?� 같이 분리?�야??
                 t = threading.Thread(target=mine)
                 t.start()
                 data.append("{mining is underway:check later by calling /block/getBlockData}")
@@ -610,6 +630,8 @@ class myHandler(BaseHTTPRequestHandler):
                     tempDict.append("accepted")
                 elif res == 2: # identical
                     tempDict.append("already updated")
+                elif res == 3: # we have a longer chain
+                    tempDict.append("we have a longer chain")
                 self.wfile.write(bytes(json.dumps(tempDict), "utf-8"))
         else:
             self.send_response(404)
