@@ -1,6 +1,6 @@
 # author : wonyong hwang (Dept. of Smart Finance, Korea Polytechnics College)
 # Description : implementation of blockchain for eductaional purposes
-# date, version : 06-07-18 0.6
+# date, version : 06-07-18 0.8
 
 import hashlib
 import time
@@ -25,12 +25,11 @@ g_bcFileName = "blockchain.csv"
 g_nodelstFileName = "nodelst.csv"
 g_receiveNewBlock = "/node/receiveNewBlock"
 g_difficulty = 2
-g_nodeList = {} # server list should be checked once in a month (will be implemented asap)
+g_maximumTry = 100
+g_nodeList = {'127.0.0.1':'8099'} # trusted server list, should be checked manually
 
 
 class Block:
-
-    # A basic block contains, index (blockheight), the previous hash, a timestamp, tx information, a nonce, and the current hash
 
     def __init__(self, index, previousHash, timestamp, data, currentHash, proof ):
         self.index = index
@@ -51,7 +50,6 @@ class txData:
         self.amount = amount
         self.receiver = receiver
         self.uuid =  uuid
-
 
 
 def generateGenesisBlock():
@@ -204,7 +202,7 @@ def readTx(txFilePath):
         with open(txFilePath, 'r',  newline='') as file:
             txReader = csv.reader(file)
             for row in txReader:
-                if row[0] == '0': # 블록체인??미포?�된 거래�?조회
+                if row[0] == '0': # find unmined txData
                     line = txData(row[0],row[1],row[2],row[3],row[4])
                     importedTx.append(line)
         print("Pulling txData from csv...")
@@ -250,8 +248,7 @@ def mineNewBlock(difficulty=g_difficulty, blockchainPath=g_bcFileName):
     blockchain.append(newBlockAttempt)
     writeBlockchain(blockchain)
 
-def mine(blocksToMine=5):
-    #for _ in range(blocksToMine):
+def mine():
     mineNewBlock()
 
 def isSameBlock(block1, block2):
@@ -264,6 +261,8 @@ def isSameBlock(block1, block2):
     elif block1.data != block2.data:
         return False
     elif block1.currentHash != block2.currentHash:
+        return False
+    elif block1.proof != block2.proof:
         return False
     return True
 
@@ -345,7 +344,7 @@ def isValidChain(bcToValidate):
 def addNode(queryStr):
     # save
     txDataList = []
-    txDataList.append([queryStr[0],queryStr[1]]) # ip, port
+    txDataList.append([queryStr[0],queryStr[1],0]) # ip, port, # of connection fail
 
     tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
     try:
@@ -395,7 +394,6 @@ def broadcastNewBlock(blockchain):
     #newBlock  = getLatestBlock(blockchain) # get the latest block
     importedNodes = readNodes(g_nodelstFileName) # get server node ip and port
     reqHeader = {'Content-Type': 'application/json; charset=utf-8'}
-    #reqBody = newBlock.__dict__
     reqBody = []
     for i in blockchain:
         reqBody.append(i.__dict__)
@@ -411,10 +409,37 @@ def broadcastNewBlock(blockchain):
                     print(URL + " responding error " + res.status_code)
             except:
                 print(URL + " is not responding.")
+                # write responding results
+                tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
+                try:
+                    with open(g_nodelstFileName, 'r', newline='') as csvfile, tempfile:
+                        reader = csv.reader(csvfile)
+                        writer = csv.writer(tempfile)
+                        for row in reader:
+                            if row:
+                                if row[0] == node[0] and row[1] ==node[1]:
+                                    print("connection failed "+row[0]+":"+row[1]+", number of fail "+row[2])
+                                    tmp = row[2]
+                                    # too much fail, delete node
+                                    if int(tmp) > g_maximumTry:
+                                        print(row[0]+":"+row[1]+" deleted from node list because of exceeding the request limit")
+                                    else:
+                                        row[2] = int(tmp) + 1
+                                        writer.writerow(row)
+                                else:
+                                    writer.writerow(row)
+                    shutil.move(tempfile.name, g_nodelstFileName)
+                    csvfile.close()
+                    tempfile.close()
+                except:
+                    print("caught exception while updating node list")
 
 def row_count(filename):
+    try:
     with open(filename) as in_file:
         return sum(1 for _ in in_file)
+    except:
+        return 0
 
 def compareMerge(bcDict):
 
@@ -438,6 +463,7 @@ def compareMerge(bcDict):
 
     except:
         print("file open error in compareMerge or No database exists")
+        print("call initSvr if this server has just installed")
         return -1
 
     #if it fails to read block data  from db(csv)
@@ -505,11 +531,59 @@ def compareMerge(bcDict):
         # [END] save it to csv
         return 1
 
+def initSvr():
+    print("init Server")
+    # 1. check if we have a node list file
+    last_line_number = row_count(g_nodelstFileName)
+    # if we don't have, let's request node list
+    if last_line_number == 0:
+        # get nodes...
+        for key, value in g_nodeList.items():
+            URL = 'http://'+key+':'+value+'/node/getNode'
+            try:
+                res = requests.get(URL)
+            except requests.exceptions.ConnectionError:
+                continue
+            if res.status_code == 200 :
+                print(res.text)
+                tmpNodeLists = json.loads(res.text)
+                for node in tmpNodeLists:
+                    addNode(node)
+
+    # 2. check if we have a blockchain data file
+    last_line_number = row_count(g_bcFileName)
+    blockchainList=[]
+    if last_line_number == 0:
+        # get Block Data...
+        for key, value in g_nodeList.items():
+            URL = 'http://'+key+':'+value+'/block/getBlockData'
+            try:
+                res = requests.get(URL)
+            except requests.exceptions.ConnectionError:
+                continue
+            if res.status_code == 200 :
+                print(res.text)
+                tmpbcData = json.loads(res.text)
+                for line in tmpbcData:
+                    # print(type(line))
+                    # index, previousHash, timestamp, data, currentHash, proof
+                    block = [line['index'], line['previousHash'], line['timestamp'], line['data'],line['currentHash'], line['proof']]
+                    blockchainList.append(block)
+                try:
+                    with open(g_bcFileName, "w", newline='') as file:
+                        writer = csv.writer(file)
+                        writer.writerows(blockchainList)
+                except Exception as e:
+                    print("file write error in initSvr() "+e)
+
+    return 1
 
 # This class will handle any incoming request from
 # a browser
 class myHandler(BaseHTTPRequestHandler):
 
+    #def __init__(self, request, client_address, server):
+    #    BaseHTTPRequestHandler.__init__(self, request, client_address, server)
 
     # Handler for the GET requests
     def do_GET(self):
@@ -536,7 +610,6 @@ class myHandler(BaseHTTPRequestHandler):
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
 
             elif None != re.search('/block/generateBlock', self.path):
-                #mine() # thoread �??�래 코드?� 같이 분리?�야??
                 t = threading.Thread(target=mine)
                 t.start()
                 data.append("{mining is underway:check later by calling /block/getBlockData}")
@@ -551,15 +624,26 @@ class myHandler(BaseHTTPRequestHandler):
             self.end_headers()
             if None != re.search('/node/addNode', self.path):
                 queryStr = urlparse(self.path).query.split(':')
+                print("client ip : "+self.client_address[0]+" query ip : "+queryStr[0])
+                if self.client_address[0] != queryStr[0]:
+                    data.append("your ip address doesn't match with the requested parameter")
+                else:
                 res = addNode(queryStr)
                 if res == 1:
-                    data.append("added ok")
+                        importedNodes = readNodes(g_nodelstFileName)
+                        data =importedNodes
+                        print("node added okay")
                 elif res == 0 :
                     data.append("caught exception while saving")
                 elif res == -1 :
+                        importedNodes = readNodes(g_nodelstFileName)
+                        data = importedNodes
                     data.append("requested node is already exists")
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
-
+            elif None != re.search('/node/getNode', self.path):
+                importedNodes = readNodes(g_nodelstFileName)
+                data = importedNodes
+                self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
         else:
             self.send_response(403)
             self.send_header('Content-Type', 'application/json')
@@ -651,9 +735,11 @@ try:
     server = ThreadedHTTPServer(('', PORT_NUMBER), myHandler)
     print('Started httpserver on port ', PORT_NUMBER)
 
+    initSvr()
     # Wait forever for incoming http requests
     server.serve_forever()
 
-except KeyboardInterrupt:
+except (KeyboardInterrupt, Exception) as e:
     print('^C received, shutting down the web server')
+    print(e)
     server.socket.close()
