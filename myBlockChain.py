@@ -252,17 +252,17 @@ def mine():
     mineNewBlock()
 
 def isSameBlock(block1, block2):
-    if block1.index != block2.index:
+    if str(block1.index) != str(block2.index):
         return False
-    elif block1.previousHash != block2.previousHash:
+    elif str(block1.previousHash) != str(block2.previousHash):
         return False
-    elif block1.timestamp != block2.timestamp:
+    elif str(block1.timestamp) != str(block2.timestamp):
         return False
-    elif block1.data != block2.data:
+    elif str(block1.data) != str(block2.data):
         return False
-    elif block1.currentHash != block2.currentHash:
+    elif str(block1.currentHash) != str(block2.currentHash):
         return False
-    elif block1.proof != block2.proof:
+    elif str(block1.proof) != str(block2.proof):
         return False
     return True
 
@@ -310,7 +310,7 @@ def isValidChain(bcToValidate):
             for line in blockReader:
                 block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                 genesisBlock.append(block)
-                break
+#                break
     except:
         print("file open error in isValidChain")
         return False
@@ -332,11 +332,15 @@ def isValidChain(bcToValidate):
         print('Genesis Block Incorrect')
         return False
 
-    tempBlocks = [bcToValidateForBlock[0]]
-    for i in range(1, len(bcToValidateForBlock)):
-        if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
-            tempBlocks.append(bcToValidateForBlock[i])
-        else:
+    #tempBlocks = [bcToValidateForBlock[0]]
+    #for i in range(1, len(bcToValidateForBlock)):
+    #    if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
+    #        tempBlocks.append(bcToValidateForBlock[i])
+    #    else:
+    #        return False
+
+    for i in range(0, len(bcToValidateForBlock)):
+        if isSameBlock(genesisBlock[i], bcToValidateForBlock[i]) == False:
             return False
 
     return True
@@ -405,6 +409,7 @@ def broadcastNewBlock(blockchain):
                 res = requests.post(URL, headers=reqHeader, data=json.dumps(reqBody))
                 if res.status_code == 200:
                     print(URL + " sent ok.")
+                    print("Response Message " + res.text)
                 else:
                     print(URL + " responding error " + res.status_code)
             except:
@@ -450,7 +455,7 @@ def compareMerge(bcDict):
     try:
         with open(g_bcFileName, 'r',  newline='') as file:
             blockReader = csv.reader(file)
-            last_line_number = row_count(g_bcFileName)
+            #last_line_number = row_count(g_bcFileName)
             for line in blockReader:
                     block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                     heldBlock.append(block)
@@ -483,26 +488,48 @@ def compareMerge(bcDict):
         print('Genesis Block Incorrect')
         return -1
 
-    # chekc if broadcasted new block,1 ahead than > last held block
+    # check if broadcasted new block,1 ahead than > last held block
 
     if isValidNewBlock(bcToValidateForBlock[-1],heldBlock[-1]) == False:
 
-        # lastest block == broadcasted last block
+        # latest block == broadcasted last block
         if isSameBlock(heldBlock[-1], bcToValidateForBlock[-1]) == True:
-            print('lastest block == broadcasted last block, already updated')
+            print('latest block == broadcasted last block, already updated')
             return 2
         # select longest chain
         elif len(bcToValidateForBlock) > len(heldBlock):
             # validation
-            for i in range(0,len(heldBlock)):
-                if isSameBlock(heldBlock[i],bcToValidateForBlock[i]) == False:
+            if isSameBlock(heldBlock[0],bcToValidateForBlock[0]) == False:
                     print("Block Information Incorrect #1")
                     return -1
+            tempBlocks = [bcToValidateForBlock[0]]
+            for i in range(1, len(bcToValidateForBlock)):
+                if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
+                    tempBlocks.append(bcToValidateForBlock[i])
+                else:
+                    return -1
+            # [START] save it to csv
+            blockchainList = []
+            for block in bcToValidateForBlock:
+                blockList = [block.index, block.previousHash, str(block.timestamp), block.data,
+                             block.currentHash, block.proof]
+                blockchainList.append(blockList)
+            with open(g_bcFileName, "w", newline='') as file:
+                writer = csv.writer(file)
+                writer.writerows(blockchainList)
+            # [END] save it to csv
+            return 1
         elif len(bcToValidateForBlock) < len(heldBlock):
             # validation
-            for i in range(0,len(bcToValidateForBlock)):
-                if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
-            print("Block Information Incorrect #1")
+            #for i in range(0,len(bcToValidateForBlock)):
+            #    if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
+            #        print("Block Information Incorrect #1")
+            #        return -1
+            tempBlocks = [bcToValidateForBlock[0]]
+            for i in range(1, len(bcToValidateForBlock)):
+                if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
+                    tempBlocks.append(bcToValidateForBlock[i])
+                else:
             return -1
             print("We have a longer chain")
             return 3
@@ -520,6 +547,11 @@ def compareMerge(bcDict):
 
         print("new block good")
 
+        # validation
+        for i in range(0, len(heldBlock)):
+            if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
+                print("Block Information Incorrect #1")
+                return -1
         # [START] save it to csv
         blockchainList = []
         for block in bcToValidateForBlock:
