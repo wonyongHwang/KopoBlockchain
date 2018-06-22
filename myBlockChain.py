@@ -26,7 +26,7 @@ g_nodelstFileName = "nodelst.csv"
 g_receiveNewBlock = "/node/receiveNewBlock"
 g_difficulty = 2
 g_maximumTry = 100
-g_nodeList = {'127.0.0.1':'8099'} # trusted server list, should be checked manually
+g_nodeList = {'trustedServerAddress':'8099'} # trusted server list, should be checked manually
 
 
 class Block:
@@ -95,14 +95,16 @@ def writeBlockchain(blockchain):
             for line in blockReader:
                 if blockReader.line_num == last_line_number:
                     lastBlock = Block(line[0], line[1], line[2], line[3], line[4], line[5])
-    except:
-        print("file open error in check current db(csv)")
-        return
+
     if int(lastBlock.index) + 1 != int(blockchainList[-1][0]):
         print("index sequence mismatch")
         if int(lastBlock.index) == int(blockchainList[-1][0]):
             print("db(csv) has already been updated")
         return
+    except:
+        print("file open error in check current db(csv) \n or maybe there's some other reason")
+        pass
+        #return
     # [END] check current db(csv)
 
     with open(g_bcFileName, "w", newline='') as file:
@@ -144,7 +146,7 @@ def updateTx(blockData) :
     matchList = phrase.findall(blockData.data)
 
     if len(matchList) == 0 :
-        print ("No Match Found! " + blockData.data + "block idx: " + blockData.index)
+        print ("No Match Found! " + str(blockData.data) + "block idx: " + str(blockData.index))
         return
 
     tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
