@@ -1,7 +1,3 @@
-# author : wonyong hwang (Dept. of Smart Finance, Korea Polytechnics College)
-# Description : implementation of blockchain for eductaional purposes
-# date, version : 06-07-18 0.8
-
 import hashlib
 import time
 import csv
@@ -96,11 +92,11 @@ def writeBlockchain(blockchain):
                 if blockReader.line_num == last_line_number:
                     lastBlock = Block(line[0], line[1], line[2], line[3], line[4], line[5])
 
-    if int(lastBlock.index) + 1 != int(blockchainList[-1][0]):
-        print("index sequence mismatch")
-        if int(lastBlock.index) == int(blockchainList[-1][0]):
-            print("db(csv) has already been updated")
-        return
+        if int(lastBlock.index) + 1 != int(blockchainList[-1][0]):
+            print("index sequence mismatch")
+            if int(lastBlock.index) == int(blockchainList[-1][0]):
+                print("db(csv) has already been updated")
+            return
     except:
         print("file open error in check current db(csv) \n or maybe there's some other reason")
         pass
@@ -136,7 +132,10 @@ def readBlockchain(blockchainFilePath, mode = 'internal'):
 
     except:
         if mode == 'internal' :
-            return [generateGenesisBlock()]
+            blockchain = generateGenesisBlock()
+            importedBlockchain.append(blockchain)
+            writeBlockchain(importedBlockchain)
+            return importedBlockchain
         else :
             return None
 
@@ -443,8 +442,8 @@ def broadcastNewBlock(blockchain):
 
 def row_count(filename):
     try:
-    with open(filename) as in_file:
-        return sum(1 for _ in in_file)
+        with open(filename) as in_file:
+            return sum(1 for _ in in_file)
     except:
         return 0
 
@@ -459,8 +458,8 @@ def compareMerge(bcDict):
             blockReader = csv.reader(file)
             #last_line_number = row_count(g_bcFileName)
             for line in blockReader:
-                    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
-                    heldBlock.append(block)
+                block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
+                heldBlock.append(block)
                 #if blockReader.line_num == 1:
                 #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                 #    heldBlock.append(block)
@@ -532,10 +531,10 @@ def compareMerge(bcDict):
                 if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
                     tempBlocks.append(bcToValidateForBlock[i])
                 else:
-            return -1
+                    return -1
             print("We have a longer chain")
             return 3
-    else:
+        else:
             print("Block Information Incorrect #2")
             return -1
     else: # very normal case (ex> we have index 100 and receive index 101 ...)
@@ -662,17 +661,17 @@ class myHandler(BaseHTTPRequestHandler):
                 if self.client_address[0] != queryStr[0]:
                     data.append("your ip address doesn't match with the requested parameter")
                 else:
-                res = addNode(queryStr)
-                if res == 1:
+                    res = addNode(queryStr)
+                    if res == 1:
                         importedNodes = readNodes(g_nodelstFileName)
                         data =importedNodes
                         print("node added okay")
-                elif res == 0 :
-                    data.append("caught exception while saving")
-                elif res == -1 :
+                    elif res == 0 :
+                        data.append("caught exception while saving")
+                    elif res == -1 :
                         importedNodes = readNodes(g_nodelstFileName)
                         data = importedNodes
-                    data.append("requested node is already exists")
+                        data.append("requested node is already exists")
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
             elif None != re.search('/node/getNode', self.path):
                 importedNodes = readNodes(g_nodelstFileName)
