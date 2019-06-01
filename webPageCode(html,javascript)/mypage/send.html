@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>송금 페이지</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+  <div class="container">
+    <p></p>
+    <h2>귀엽조 코인 송금</h2>
+    <p>받으실 분의 계좌를 입력해 주세요 </p>
+    <!-- <code>.was-validated</code> to indicate what's missing before submitting the form:</p> -->
+    <form class="was-validated">
+      <div class="form-group">
+        <label for="uname">본인계좌:</label>
+        <input type="text" class="form-control" id="sender" placeholder="Enter sender account number" name="uname" required>
+        <div class="valid-feedback">Valid Account Number.</div>
+        <div class="invalid-feedback">Please fill out this field.</div>
+      </div>
+
+      <form class="was-validated">
+        <div class="form-group">
+          <label for="uname">수취인계좌:</label>
+          <input type="text" class="form-control" id="receiver" placeholder="Enter receiver account number" name="uname" required>
+          <div class="valid-feedback">Valid Account Number.</div>
+          <div class="invalid-feedback">Please fill out this field.</div>
+        </div>
+        <div class="form-group">
+          <label for="pwd">금액:</label>
+          <input type="number" class="form-control" id="amount" placeholder="Enter amount" name="pswd" required>
+          <div class="valid-feedback">Valid.</div>
+          <div class="invalid-feedback">Please fill out this field.</div>
+        </div>
+        <div class="form-group form-check">
+          <label class="form-check-label">
+            <input class="form-check-input" type="checkbox" name="remember" required> 송금에 동의합니다.
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Check this checkbox to continue.</div>
+          </label>
+        </div>
+        <button type="button" class="btn btn-primary" id="sendBtn">송금!</button>
+      </form>
+  </div>
+
+</body>
+<script>
+  $("#sendBtn").click(function() {
+    alert(2)
+    $.ajax({
+      type: 'POST',
+      // url: 'localhost:8099/block/newtx',
+      url: '192.168.110.1:8777/block/newtx',
+      type: 'POST',
+      data: {
+        sender: $("#sender").val(),
+        amount: $("#amount").val(),
+        receiver: $("#receiver").val()
+      },
+      success: function(response) {
+        alert(1)
+      },
+    })
+  });
+</script>
+
+</html>

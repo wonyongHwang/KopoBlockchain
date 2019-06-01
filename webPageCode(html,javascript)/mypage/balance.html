@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>잔액 조회</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+</head>
+<script src="/lib/hello.all.js"></script>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script>
+  // 인증 초기화 init을 호출하고 관련 파라미터를 전달
+  hello.init({
+    google: '905191922883-ijlgbvs85t87le6gqkje6dv8q2a32lfg.apps.googleusercontent.com'
+  }, {
+    redirect_uri: '/auth/callbackGoogle'
+  });
+
+  function authGoogle() {
+    hello('google').login({
+      scope: 'email'
+    }).then(function(auth) { //hello('서비스이름') scope 쿼리스트링 파라미터
+      hello(auth.network).api('/me').then(function(r) { //hello.js모듈에서 정의한 매핑된 경로에 대한 상대경로/me
+        accessToken = auth.authResponse.access_token; //hello()호출로 부터 반환된 객체에서 얻을수 있는 토큰을 저장
+        getGoogleMe(); //아래함수를 실행
+      });
+    });
+  }
+
+  function getGoogleMe() { //에이피아이에서 로직이 다 돌고 콜백 URL로 돌아오면 이 함수를 실행시키라는거 같애.이 함수는 제이슨 으로 된 정보를 뽑아내는 함수같아 아마도
+    hello('google').api('me').then(
+      function(json) {
+        var jsondata = json;
+
+        $.ajax({ //서버와 통신하는애(url로 이동하겠다)
+          type: 'POST', //중요한정보, 긴 정보는 post방식이 적합해
+          url: '/selectBalance',
+          data: {
+            json: jsondata
+          }, //(url)입력한 값을 파라미터로 url을 자동으로 들어가게 한다.
+          success: function(response) {
+            result = ""
+            result = `${response[0].name}님의 남은코인은 ${response[0].balance}개 입니다.`
+            $("#resultArea").html(result)
+          },
+          // userinfo에 데이터가 없을때 -> 안되고있으뮤ㅠㅠㅠㅠㅠ
+          error: function(request, status, error) {
+            result = "존재하지 않는 계좌입니다."
+            $("#resultArea").html(result)
+          },
+        })
+      }
+    )
+  };
+</script>
+
+<body>
+
+  <div class="jumbotron text-center">
+    <h1>귀엽조</h1>
+    <p>잔액 조회!</p>
+  </div>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-4">
+        <h3></h3>
+        <p></p>
+        <p></p>
+      </div>
+      <div class="col-sm-4">
+        <h3>조회버튼!</h3>
+        <p><button type="button" class="btn btn-secondary" onclick="authGoogle()">CLICK!</button></p>
+        <p></p>
+      </div>
+      <div class="col-sm-4">
+        <h3></h3>
+        <p></p>
+        <p></p>
+      </div>
+    </div>
+  </div>
+  <div class="jumbotron text-center" id="resultArea">
+    <h1></h1>
+  </div>
+</body>
+
+</html>

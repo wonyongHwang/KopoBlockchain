@@ -19,7 +19,20 @@ from operator import eq
 #Process, Lock을 하기 위한 모듈
 from multiprocessing import Process, Lock
 
+#***********************************************************************************************************************************************************************************************
+#***********************************************************************************************************************************************************************************************
+# 저희 조에서는 멀티프로세싱(multiprocessing)을 추가했습니다.                                                                                                                                  *
+# 기존에는 csv 파일이 쓰여질 때, 다른 포트 등에서 작업 중일 경우 파일 작성이 불가했습니다.                                                                                                     *
+# 저희는 이를 수정하기 위해 csv 파일이 열려있을 경우, 블록체인과 거래내역의 작성이 중지되다가 csv 파일이 닫히면 새로운 내역이 반영되어 csv 파일이 작성되도록 코드를 수정했습니다.              *
+# 이를 위해서 csv(blockchain, txData, nodelist)를 write하는 부분에서 Lock()을 이용해서 lock에 내장된 메소드 acquire를 통해 lock을 걸고, release를 통해서 lock을 풀어주는 방식을 활용했습니다.  *
+# 그외에도 newTx에 이상한 값이 들어왔을 때의 예외처리, nodelist.csv 파일에 없는 노드가 broadcast되는 문제를 예외처리 하였습니다.                                                               *
+#                                                                                                                                                                                              *
+# blockchain_Upgrade Ver2.0 (writer : 김유림, 김해리, 박종선, 서보국, 이형섭, 송진우)                                                                                                          *
+#***********************************************************************************************************************************************************************************************
+#***********************************************************************************************************************************************************************************************
+
 lock = Lock()
+nodeList = []
 blockchainList = []
 
 IP_ADDRESS = "127.0.0.1"
@@ -30,7 +43,7 @@ g_nodelstFileName = "nodelst.csv"
 g_receiveNewBlock = "/node/receiveNewBlock"
 g_difficulty = 2
 g_maximumTry = 100
-g_nodeList = {'trustedServerAddress':'8090'} # trusted server list, should be checked manually
+g_nodeList = {'127.0.0.1':'8099'} # trusted server list, should be checked manually
 
 
 class Block:
@@ -117,7 +130,7 @@ def writeBlockchain(blockchain):
                 with open(g_bcFileName, "w", newline='') as file:
                     writer = csv.writer(file)
                     writer.writerows(blockchainList)
-                    blockchainList.clear()  ##===========================================> 해리: blockchainList가 전역이라 블록을 반복해서 생성할 경우에는 블록체인리스트 배열에 블록정보가 쌓여서 이미 있는 블록을 또 써, 파일을 write 한 후에는 비워줘야 해요
+                    blockchainList.clear()  ##===========================================> blockchainList가 전역이라 블록을 반복해서 생성할 경우에는 블록체인리스트 배열에 블록정보가 쌓여서 이미 있는 블록을 또 써, 파일을 write 한 후에는 비워줘야 해요
                     print("write ok")
                     openFile = True
                     for block in blockchain:
@@ -125,7 +138,7 @@ def writeBlockchain(blockchain):
                     print('Blockchain written to blockchain.csv.')
                     print('Broadcasting new block to other nodes')
                     broadcastNewBlock(blockchain)
-                    lock.release()  ##============================================> 종선: p 계속해서 사용할 수 있도록 해줌
+                    lock.release()  ##============================================> p 계속해서 사용할 수 있도록 해줌
             except:
                     time.sleep(3)
                     print("file open error")
@@ -190,27 +203,42 @@ def updateTx(blockData) :
     shutil.move(tempfile.name, g_txFileName)
     print('txData updated')
 
-def writeTx(txRawData):
+def writeTx(txRawData): #==============================================================> temp 파일을 사용하지 않는 writeTx() / 메모리 사용을 줄여 작업의 효율성을 높였습니다.
     print(g_txFileName)
     txDataList = []
+    txOriginalList = []
     for txDatum in txRawData:
         txList = [txDatum.commitYN, txDatum.sender, txDatum.amount, txDatum.receiver, txDatum.uuid]
         txDataList.append(txList)
 
-    tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
-    try:
-        with open(g_txFileName, 'r', newline='') as csvfile, tempfile:
-            reader = csv.reader(csvfile)
-            writer = csv.writer(tempfile)
-            for row in reader:
-                if row :
-                    writer.writerow(row)
-            # adding new tx
-            writer.writerows(txDataList)
+    # tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
 
-            csvfile.close()
-            tempfile.close()
-        shutil.move(tempfile.name, g_txFileName)
+    try:
+        with open(g_txFileName, 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                txOriginalList.append(row)
+
+            openWriteTx = False
+            while not openWriteTx:
+                lock.acquire()
+                try:
+                    print("NewTxData lock.acquire")
+                    with open(g_txFileName, 'w', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        # adding new tx
+                        writer.writerows(txOriginalList)
+                        writer.writerows(txDataList)
+                        print("writeTx write ok")
+                        csvfile.close()
+                        openWriteTx = True
+                        lock.release()
+
+                except Exception as e:
+                    print(e)
+                    time.sleep(3)
+                    print("file open error")
+                    lock.release()
     except:
         # this is 1st time of creating txFile
         try:
@@ -313,7 +341,7 @@ def newtx(txToMining):
 
     newtxData = []
 
-    # 형섭, 종선 newTx 예외처리
+    # newTx 예외처리
     # transform given data to txData object
     for line in txToMining:
         # amount가 숫자가 아닌경우 "0"으로 바꿔줌
@@ -359,7 +387,11 @@ def newtx(txToMining):
         return -1
 
     if writeTx(newtxData) == 0:
-        print("file write error on txData")
+        if __name__ == '__main__': #=====================================================================> writeTx() 가 실행될 때, 프로세스를 실행하기 위해 추가한 부분입니다.
+            pwriteTx = Process(target=writeTx, args=newtxData)
+            pwriteTx.start()  #================================================================> 여기서 프로세스 시작~
+            # p.join()
+        print("newtx - return2")
         return -2
     return 1
 
@@ -411,37 +443,59 @@ def isValidChain(bcToValidate):
 
 def addNode(queryStr):
     # save
-    txDataList = []
-    txDataList.append([queryStr[0],queryStr[1],0]) # ip, port, # of connection fail
+    previousList = []
+    nodeList.append([queryStr[0],queryStr[1],0]) # ip, port, # of connection fail
 
-    tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
     try:
-        with open(g_nodelstFileName, 'r', newline='') as csvfile, tempfile:
+        with open(g_nodelstFileName, 'r', newline='') as csvfile:
             reader = csv.reader(csvfile)
-            writer = csv.writer(tempfile)
             for row in reader:
                 if row:
                     if row[0] == queryStr[0] and row[1] == queryStr[1]:
                         print("requested node is already exists")
                         csvfile.close()
-                        tempfile.close()
+                        # tempfile.close()
+                        nodeList.clear()
                         return -1
                     else:
-                        writer.writerow(row)
-            writer.writerows(txDataList)
-            csvfile.close()
-            tempfile.close()
-        shutil.move(tempfile.name, g_nodelstFileName)
+                        previousList.append(row)
+
+            openFile3 = False
+            while not openFile3:
+                lock.acquire()
+                try:
+                    with open(g_nodelstFileName, 'w', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerows(nodeList)
+                        writer.writerows(previousList)
+                        csvfile.close()
+                        nodeList.clear()
+
+                        lock.release()
+                        print('new node written to nodelist.csv.')
+                        return 1
+                except Exception as ex:
+                    print(ex)
+                    time.sleep(3)
+                    print("file open error")
+                    lock.release()
+
     except:
         # this is 1st time of creating node list
         try:
             with open(g_nodelstFileName, "w", newline='') as file:
                 writer = csv.writer(file)
-                writer.writerows(txDataList)
-        except:
+                writer.writerows(nodeList)
+                nodeList.clear()
+                print('new node written to nodelist.csv.')
+                return 1
+        except Exception as ex:
+            print(ex)
             return 0
-    return 1
-    print('new node written to nodelist.csv.')
+
+if __name__ == '__main__':
+    p3 = Process(target=addNode, args=nodeList)
+    p3.start()
 
 def readNodes(filePath):
     print("read Nodes")
@@ -462,7 +516,7 @@ def broadcastNewBlock(blockchain):
     #newBlock  = getLatestBlock(blockchain) # get the latest block
     importedNodes = readNodes(g_nodelstFileName) # get server node ip and port
 
-    # 형섭 nodeList점검 후 broadcastNewBlock 부분
+    # nodeList점검 후 broadcastNewBlock 부분
     # 첫번째 비교 portnumber 전자는 node.csv에서 읽어온 portnumber //후자는 현재 portnumber
     # 두번째 비교 ip 전자는 node.csv에서 읽어온 ip// 후자는 현재 ip
     # string끼리 비교할때 == 이 안먹혀서  eq 라이브러리 import

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>블록 데이터 조회</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+  <div class="container">
+    <h2>블록 데이터</h2>
+    <p>귀엽조 블록입니다!</p>
+      <p><button type="button" class="btn btn-secondary" onclick="location.href= 'http://localhost:3000/blockchain/main.html'">뒤로가기!</button></p>
+    <table class="table table-dark table-striped" id="demo">
+      <thead>
+        <tr>
+          <th>Index</th>
+          <th>Data</th>
+          <th>CurrentHash</th>
+          <th>PreviousHash</th>
+          <th>Proof</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>John</td>
+          <td>Doe</td>
+          <td>john@example.com</td>
+          <td>John</td>
+          <td>Doe</td>
+          <td>john@example.com</td>
+        </tr>
+        <tr>
+          <td>Mary</td>
+          <td>Moe</td>
+          <td>mary@example.com</td>
+          <td>Mary</td>
+          <td>Moe</td>
+          <td>mary@example.com</td>
+        </tr>
+        <tr>
+          <td>July</td>
+          <td>Dooley</td>
+          <td>july@example.com</td>
+          <td>July</td>
+          <td>Dooley</td>
+          <td>july@example.com</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+<script>
+  // $.ajax({
+  //   url: `http://localhost:8099/block/getBlockData`,
+  //   data: {},
+  //   success: function(response) {
+  //     }
+  //   }
+  // });
+</script>
+
+</html>
