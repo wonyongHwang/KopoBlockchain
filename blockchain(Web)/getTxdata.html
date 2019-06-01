@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <style>
+    table {
+      width: 500px;
+    }
+
+    th {
+      background: #eee;
+      padding: 5px;
+    }
+
+    td {
+      text-align: center;
+      padding: 5px;
+    }
+
+    th,
+    td {
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+
+<body>
+  tx의 갯수 : <span id="total"></span><br>
+  fee가 높은 순으로 몇 개 : <input type="number" id="count" min='1'><br>
+  <input type="button" value="검색" id="search"> <input type="button" value="뒤로" id="back"><br>
+  <span id="text"></span><br>
+  몇개허쉴? <input type="number" min="1" id="count2">
+  <input type="button" value="채굴" id="mine"><br>
+  <table id="txList">
+
+  </table>
+
+</body>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript">
+  var total
+  $.ajax({
+    url: 'http://localhost:8099/txdata/getTxdata',
+    dataType: 'json',
+    data: {},
+    success: function(result) {
+      if (result[0] == "no txData exists") {
+        $("#txList").html()
+        $("#text").html(`${result[0]}`)
+
+      } else {
+        $("#text").html('')
+        $("#txList").html('<tr><th>COMMITYN</th><th>SENDER</th><th>AMOUNT</th><th>RECEIVER</th><th>UUID</th><th>FEE</th><th>MESSAGE</th><th>TXTIME</th></tr>')
+        for (var i = 0; i < result.length; i++) {
+          var data = new Object();
+          data['COMMITYN'] = result[i].commitYN;
+          data['SENDER'] = result[i].sender;
+          data['AMOUNT'] = result[i].amount;
+          data['RECEIVER'] = result[i].receiver;
+          data['UUID'] = result[i].uuid;
+          data['FEE'] = result[i].fee;
+          data['MESSAGE'] = result[i].message;
+          data['TXTIME'] = result[i].txTime;
+          $("#txList").append(
+            `<tr><td>${data['COMMITYN']}</td><td>${data['SENDER']}</td><td>${data['AMOUNT']}</td><td>${data['RECEIVER']}</td><td>${data['UUID']}</td><td>${data['FEE']}</td><td>${data['MESSAGE']}</td><td>${data['TXTIME']}</td></tr>`);
+        }
+      }
+    }
+  })
+
+  $('#search').click(function() {
+    if ($('#count').val() < 1) {
+      alert("1 이상만 가능..^^")
+      location.href = 'getTxdata'
+    } else {
+      $.ajax({
+        url: `http://localhost:8099/txdata/getTxdata`,
+        data: {
+          count: $('#count').val()
+        },
+        success: function(result) {
+          console.log(result);
+          if (result.length < 1) {
+            $("#txList").html()
+            $("#text").html('txdata가 업서용 ><')
+          } else {
+            $("#text").html('')
+            $("#txList").html('<tr><th>COMMITYN</th><th>SENDER</th><th>AMOUNT</th><th>RECEIVER</th><th>UUID</th><th>FEE</th><th>MESSAGE</th><th>TXTIME</th></tr>')
+            for (var i = 0; i < result.length; i++) {
+              var data = new Object();
+              data['COMMITYN'] = result[i].commitYN;
+              data['SENDER'] = result[i].sender;
+              data['AMOUNT'] = result[i].amount;
+              data['RECEIVER'] = result[i].receiver;
+              data['UUID'] = result[i].uuid;
+              data['FEE'] = result[i].fee;
+              data['MESSAGE'] = result[i].message;
+              data['TXTIME'] = result[i].txTime;
+              $("#txList").append(
+                `<tr><td>${data['COMMITYN']}</td><td>${data['SENDER']}</td><td>${data['AMOUNT']}</td><td>${data['RECEIVER']}</td><td>${data['UUID']}</td><td>${data['FEE']}</td><td>${data['MESSAGE']}</td><td>${data['TXTIME']}</td></tr>`);
+            }
+          }
+        }
+      })
+    }
+  })
+
+  $('#input').click(function() {
+    $.ajax({
+      url: 'http://localhost:8099/block/newtx',
+      dataType: 'json',
+      type: 'post',
+      headers: {
+        'Content-Type': 'application/json',
+        "Access-Control-Allow-Origin": "*"
+      },
+      data: {
+        sender: "hiyom",
+        amount: "05300947",
+        receiver: "b2nn",
+        fee: "110",
+        message: "block"
+      },
+      success: function(result) {
+        console.log(result);
+      }
+    })
+  })
+
+  $('#mine').click(function() {
+    $.ajax({
+      url: "http://localhost:8099/block/generateBlock",
+      data: {
+        count: $('#count2').val()
+      },
+      success: function() {
+        alert("accepted : it will be mined later")
+        location.href = '/getBlockData'
+      }
+    })
+  });
+  $('#back').click(function() {
+    location.href = '/'
+  })
+</script>
+
+</html>

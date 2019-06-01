@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+</head>
+
+<body>
+  IP : <input type="text" id='IP'><br>
+  PORT : <input type="text" id='PORT'><br>
+  <input type="button" value="입력" id="insert"> <input type="button" value="뒤로" id="back">
+</body>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript">
+  $.ajax({
+    url: `/nodeList`,
+    data: {},
+    success: function(res) {
+      for (var i = 0; i < res.length; i++) {
+        var IP = res[i].IP
+        var PORT = res[i].PORT
+        var TRIAL = res[i].TRIAL
+        $("#nodeList").append(`<tr><td>${IP}</td><td>${PORT}</td><td>${TRIAL}</td>`);
+      }
+    }
+  });
+  $('#insert').click(function() {
+    $.ajax({
+      url: `/addNode`,
+      data: {
+        IP: $('#IP').val(),
+        PORT: $('#PORT').val()
+      },
+      type: 'post',
+      success: function(res) {
+        location.href = 'getNodelist'
+      }
+    });
+  })
+  $('#back').click(function() {
+    location.href = '/'
+  })
+</script>
+
+</html>
