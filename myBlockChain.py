@@ -21,22 +21,22 @@ import pandas as pd
 PORT_NUMBER = 8099
 MAX_GET_DATA_LISTS = 10
 MAX_NUMBER_OF_TX = 50
-DATABASE_SVR_NAME = "bcSvr_1" ####################
+DATABASE_SVR_NAME = "bcSvr1" ####################
 DATABASE_SVR_IP = "localhost"
-DATABASE_SVR_PORT = 3300
+DATABASE_SVR_PORT = 3301
 DATABASE_SVR_USER = "root"
 DATABASE_SVR_PW = "root"
-DATABASE_BC_TABLE = "bctest22" ########################
-DATABASE_ND_TABLE = "nodetest22"   ########################
+DATABASE_BC_TABLE = "blockchain" ########################
+DATABASE_ND_TABLE = "node"   ########################
 DATABASE_TPSVR_IP = "http://192.168.110.22:8099"
 
 g_difficulty = 2
-SVR_LIST = {'127.0.0.1': '8096', '192.168.110.19' : '3300', '192.168.110.23' : '3300'}
+SVR_LIST = {'127.0.0.1': 8096, '192.168.110.19' : 3300, '192.168.110.23' : 3300}
 g_receiveNewBlock = "/node/receiveNewBlock"
 g_maximumTry = 100
 g_maximumGetTx = 50
 g_nodeList = {'127.0.0.1': '8096'}  # trusted server list, should be checked manually
-engine = create_engine("mysql+pymysql://root:root@192.168.110.16:3300/bcSvr_1")
+engine = create_engine("mysql+pymysql://root:root@192.168.110.16:3300/bcSvr1")
 
 class Block:
 
@@ -66,8 +66,12 @@ class txData:
         self.uuid = uuid
         self.transactionTime = transactionTime
 
-    # block과 hash를 생성해서 block 객체에 담아서 리턴한다
+class Node:
 
+    def __init__(self, ip, port, tryConnect):
+        self.ip = ip
+        self.port = port
+        self.tryConnect = tryConnect
 
 def generateGenesisBlock(timestamp, proof):
     isSuccess = True
@@ -176,10 +180,7 @@ def generateNextBlock(blockList, txData, timestamp, proof):
     newBlock = None
     blockData = []
     try:
-        for data in blockList :
-            block = Block(data[0], data[1], data[2], data[3], data[4], data[5], data[6])
-            blockData.append(block)
-        previousBlock = getLatestBlock(blockData)
+        previousBlock = getLatestBlock(blockList)
         nextIndex = int(previousBlock.index) + 1
         nextTimestamp = timestamp
         strTxData = getStrTxData(txData)
@@ -260,8 +261,7 @@ def writeBlockchain(blockchain):
 def readBlockchain():
     print("readBlockchain")
     result = False
-    bcData = []
-    bcDataList = []
+    blockDataList = []
     conn = pymysql.connect(host=DATABASE_SVR_IP, port=DATABASE_SVR_PORT, user=DATABASE_SVR_USER, password=DATABASE_SVR_PW, \
                            db=DATABASE_SVR_NAME, charset='utf8')
 
@@ -271,15 +271,15 @@ def readBlockchain():
             cursor.execute(sql)
             rows = cursor.fetchall()
 
-            for row in rows :
-
-                bcDataList.append(list(row))
+            for data in rows:
+                block = Block(data[0], data[1], data[2], data[3], data[4], data[5], data[6])
+                blockDataList.append(block)
             result = True
     except:
         print("connect failed or other reason")
     finally:
         conn.close()
-    return bcDataList, result
+    return blockDataList, result
 
 
 def updateTx(blockData):
@@ -335,26 +335,30 @@ def getTxData(chooseData):
         return [], False
 
 def mineNewBlock(difficulty=g_difficulty):
-    selectList, blockTF = readBlockchain()
-    print(selectList, blockTF, "readBlockchainㅎㅎ")
-    urlData,txTF = getTxData(0)
-    print(urlData, txTF, "getTxDatahㅎㅎ")
+    blockList, blockTF = readBlockchain()
+    urlData, txTF = getTxData(0)
+    print(urlData, txTF, "getTxData")
     timestamp = time.time()
     proof = 0
-    isSuccess = True
-    if blockTF and txTF : #url이 잘 들어왔고
-        if len(selectList)== 0 : #그 안에 txdata 가 없으면 genesisblock을 성성
-            newBlock, isSuccess = generateGenesisBlock(timestamp, proof) #gensis가 잘 생성됐으면
+
+    if blockTF and txTF :
+        if len(selectList) == 0 :
+            newBlock, isSuccessBc = generateGenesisBlock(timestamp, proof) #gensis가 잘 생성됐으면
         else:  # txdata가 있으면
-            newBlock, isSuccess = generateNextBlock(selectList, urlData, timestamp, proof)  ###if 처리 아직 안함
+            newBlock, isSuccessBc = generateNextBlock(blockList, urlData, timestamp, proof)  ###if 처리 아직 안함
             print(newBlock, isSuccess)
 
-        if isSuccess :
+        if isSuccessBc :
             upResult = updateTx(newBlock)
             if upResult == 1 :
                 wrResult = writeBlockchain(newBlock)
-                # if wrResult :
+                if wrResult == 1 :
+                    broadcastNewBlock()
+                else :
+                    print("Fail to write new block on table ")
+                    return
             else :
+                print("Failed to update txdata on transaction pool table used create block")
                 return
         else :
             print("Fail Generate NewBlock")
@@ -483,94 +487,6 @@ def addNode(queryStr):
         result = 0
     return result
 
-
-
-# def readNodes(filePath):
-#     print("read Nodes")
-#     importedNodes = []
-#
-#     try:
-#
-#         with open(filePath, 'r', newline='') as file:
-#             txReader = csv.reader(file)
-#
-#             for row in txReader:
-#                 line = [row[0], row[1]]
-#                 importedNodes.append(line)
-#         print("Pulling txData from csv...")
-#         return importedNodes
-#     except:
-#
-#         return []
-
-# def broadcastNewBlock(blockchain):
-#
-#     importedNodes = readNodes(g_nodelstFileName)  # get server node ip and port
-#
-#     reqHeader = {'Content-Type': 'application/json; charset=utf-8'}
-#
-#     reqBody = []
-#
-#     for i in blockchain:
-#        reqBody.append(i.__dict__)
-#
-#     if len(importedNodes) > 0:
-#         for node in importedNodes:
-#             try:
-#
-#                 URL = "http://" + node[0] + ":" + node[
-#                     1] + g_receiveNewBlock  # 형태 : http://ip:port/node/receiveNewBlock
-#
-#                 res = requests.post(URL, headers=reqHeader, data=json.dumps(reqBody))
-#
-#                 if res.status_code == 200:
-#                     print(URL + " sent ok.")
-#                     print("Response Message " + res.text)
-#
-#                 else:
-#                     print(URL + " responding error " + res.status_code)
-#
-#             except:
-#                 print(URL + " is not responding.")
-#                 # write responding results
-#
-#                 tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
-#                 try:
-#
-#                     # 해당 파일이 존재하지않다면, except로 빠진다.
-#                     with open(g_nodelstFileName, 'r', newline='') as csvfile, tempfile:
-#                         reader = csv.reader(csvfile)
-#                         writer = csv.writer(tempfile)
-#
-#                         for row in reader:
-#                             # if row?
-#                             if row:
-#
-#                                 if row[0] == node[0] and row[1] == node[1]:
-#                                     print("connection failed " + row[0] + ":" + row[1] + ", number of fail " + row[2])
-#
-#                                     tmp = row[2]
-#                                     if int(tmp) > g_maximumTry:
-#                                         print(row[0] + ":" + row[
-#                                             1] + " deleted from node list because of exceeding the request limit")
-#
-#                                     else:
-#
-#                                         row[2] = int(tmp) + 1
-#                                         writer.writerow(row)
-#
-#                                 else:
-#                                     writer.writerow(row)
-#
-#                     shutil.move(tempfile.name, g_nodelstFileName)
-#
-#                     csvfile.close()
-#                     tempfile.close()
-#
-#                 except:
-#                     print("caught exception while updating node list")
-
-
 def row_count():
     list = []
     try:
@@ -598,14 +514,10 @@ def compareMerge(bcDict):
 
     # transform given data to Block object
     for line in bcDict:
-        # print(type(line))
-        # index, previousHash, timestamp, data, currentHash, proof
-        # Block생성자로 객체를 생성하여 block에 넣는다.
-        # -----------------------------------------V01 : 완
-        # line['merkleHash'] merkleHash 추가
+
         block = Block(line['index'], line['previousHash'], line['timestamp'], line['data'], line['currentHash'],
                       line['proof'], line['merkleHash'])
-        # block객체형 list 변수에 다시 block객체를 넣는다
+
         bcToValidateForBlock.append(block)
 
     # compare the given data with genesisBlock
@@ -613,9 +525,7 @@ def compareMerge(bcDict):
         print('Genesis Block Incorrect')
         return -1
 
-    # check if broadcasted new block,1 ahead than > last held block
-
-    if isValidNewBlock(bcToValidateForBlock[-1], heldBlock[-1]) == False: #유효하지 않으면
+    if isValidNewBlock(bcToValidateForBlock[-1], heldBlock[-1]) == False:
 
         # latest block == broadcasted last block
         if isSameBlock(heldBlock[-1], bcToValidateForBlock[-1]) == True:
@@ -684,6 +594,10 @@ def compareMerge(bcDict):
         writeBlockchain(blockchainList)
         return 1
 
+def broadcastNewBlock():
+    #table의 블록데이터 전체를 읽어온다,
+    #SVR_LIST에 순차적으로 url post로 보내준다.
+    blockList = readBlockchain()
 
 def initSvr():
     conn = pymysql.connect(host=DATABASE_SVR_IP, port=DATABASE_SVR_PORT, user=DATABASE_SVR_USER,
@@ -729,15 +643,177 @@ def initSvr():
         print("Failed to create nodelist table " + DATABASE_ND_TABLE + " on " + DATABASE_SVR_NAME)
     finally:
         conn.close()
-    ####################################################################################################################
-    #svr리스트의 db에 접속
-    #순차적으로 count 쿼리 날림
-    #list에 저장
-    #가장 높은 맥스값 뽑아서 maxCount에 저장
-    #해당 maxCount에 해당하는 포트로 접속
-    #selcet * 날리고 fetchall
-    #나의 데이터베이스에 저장
+    ############################################################################################################## blockchain
+    #내 서버의 mydb카운트를 가져온다
+    myblockCount = 0
 
+    conn = pymysql.connect(host=DATABASE_SVR_IP, port=DATABASE_SVR_PORT, user=DATABASE_SVR_USER,
+                           password=DATABASE_SVR_PW, \
+                           db=DATABASE_SVR_NAME, charset='utf8')
+
+    sql = "SELECT COUNT(*) FROM " + DATABASE_BC_TABLE
+    try:
+        with conn.cursor() as curs:
+            curs.execute(sql)
+            myBlockCount = curs.fetchone()
+    except:
+        print("Failed to get rowCount from mmy database :" + DATABASE_TPSVR_IP + ":" + DATABASE_SVR_PORT + ":" + DATABASE_SVR_NAME)
+    finally:
+        curs.close()
+
+    #myDbCount 가 0이라면 쭉 실행
+    if myblockCount == 0 :
+        #svr리스트의 db에 접속
+        maxDbCount = 0
+        currentCount = 0
+        maxCountIp = ""
+        maxCountPort = 0
+
+        for key, value in SVR_LIST.items() :
+            conn = pymysql.connect(host= key, port= value, user=DATABASE_SVR_USER,
+                                   password=DATABASE_SVR_PW, \
+                                   db=DATABASE_SVR_NAME, charset='utf8')
+        #순차적으로 count 쿼리 날림
+
+            sql = "SELECT COUNT(*) FROM " + DATABASE_BC_TABLE
+            try :
+                with conn.cursor() as curs:
+                    curs.execute(sql)
+                    currentCount = curs.fetchone()
+
+                    # 초기 count =0, 현재 count가 이전 count보다 높을 경우, maxCountIp와 포트번호를 교체
+                    if currentCount > dbCount :
+                        maxDbCount = currentCount
+                        maxCountIp = key
+                        maxCountPort = value
+            except:
+                print("Failed to get blockchain data from svr_list")
+            finally:
+                curs.close()
+        #maxCountIp와 port로 접속
+            conn = pymysql.connect(host=maxCountIp, port=maxCountPort, user=DATABASE_SVR_USER,
+                                   password=DATABASE_SVR_PW, \
+                                   db=DATABASE_SVR_NAME, charset='utf8')
+            # selcet * 날리고 fetchall
+            sql = "SELECT * FROM " + DATABASE_BC_TABLE
+            try:
+                with conn.cursor() as curs:
+                    curs.execute(sql)
+                    dbData = curs.fetchall()
+            except:
+                print("Failed to ")
+            finally:
+                curs.close()
+        #가져온 dbData의 내용을 한행씩 해체하여 블록객체를 생성한 후 , 블록객체리스트에 담는다.
+        getBlockList = []
+        for line in dbData :
+            row = Block(line[0],line[1],line[2],line[3],line[4],line[5],line[6])
+            getBlockList.append(row)
+        #나의 데이터베이스에 저장
+        conn = pymysql.connect(host=DATABASE_SVR_IP, port=DATABASE_SVR_PORT, user=DATABASE_SVR_USER, passwd=DATABASE_SVR_PW, \
+                               database=DATABASE_SVR_NAME)
+
+        for blockchain in getBlockList :
+            try:
+                with conn.cursor() as curs:
+                    print(blockchain.index, blockchain.previousHash, str(blockchain.timestamp), \
+                          blockchain.data, blockchain.currentHash, blockchain.proof, blockchain.merkleHash)
+                    sql = "INSERT INTO " + DATABASE_BC_TABLE + " VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                    curs.execute(sql, (blockchain.index, blockchain.previousHash, str(blockchain.timestamp), \
+                                       blockchain.data, blockchain.currentHash, blockchain.proof, blockchain.merkleHash))
+                    conn.commit()
+            except:
+                print("fail to read blockchain table")
+            finally:
+                conn.close()
+    else :
+        pass
+    ################################################################################################################ node
+    #DATABASE_BC_TABLE 를 DATABASE_ND_TABLE 로 교체
+    myNnodeCount = 0
+
+    conn = pymysql.connect(host=DATABASE_SVR_IP, port=DATABASE_SVR_PORT, user=DATABASE_SVR_USER,
+                           password=DATABASE_SVR_PW, \
+                           db=DATABASE_SVR_NAME, charset='utf8')
+
+    sql = "SELECT COUNT(*) FROM " + DATABASE_ND_TABLE
+    try:
+        with conn.cursor() as curs:
+            curs.execute(sql)
+            myNnodeCount = curs.fetchone()
+    except:
+        print("Failed to get rowCount from mmy database :" + DATABASE_TPSVR_IP + ":" + DATABASE_SVR_PORT + ":" + DATABASE_SVR_NAME)
+    finally:
+        curs.close()
+
+    # myDbCount 가 0이라면 쭉 실행
+    if myNnodeCount == 0:
+        # svr리스트의 db에 접속
+        dbCount = 0
+        currentCount = 0
+        maxCountIp = ""
+        maxCountPort = 0
+
+        for key, value in SVR_LIST.items():
+            conn = pymysql.connect(host=key, port=value, user=DATABASE_SVR_USER,
+                                   password=DATABASE_SVR_PW, \
+                                   db=DATABASE_SVR_NAME, charset='utf8')
+            # 순차적으로 count 쿼리 날림
+
+            sql = "SELECT COUNT(*) FROM " + DATABASE_ND_TABLE
+            try:
+                with conn.cursor() as curs:
+                    curs.execute(sql)
+                    currentCount = curs.fetchone()
+
+                    # 초기 count =0, 현재 count가 이전 count보다 높을 경우, maxCountIp와 포트번호를 교체
+                    if currentCount > dbCount:
+                        dbCount = currentCount
+                        maxCountIp = key
+                        maxCountPort = value
+            except:
+                print("Failed to get blockchain data from svr_list")
+            finally:
+                curs.close()
+            # maxCountIp와 port로 접속
+            conn = pymysql.connect(host=maxCountIp, port=maxCountPort, user=DATABASE_SVR_USER,
+                                   password=DATABASE_SVR_PW, \
+                                   db=DATABASE_SVR_NAME, charset='utf8')
+            # selcet * 날리고 fetchall
+            sql = "SELECT * FROM " + DATABASE_ND_TABLE
+            try:
+                with conn.cursor() as curs:
+                    curs.execute(sql)
+                    dbData = curs.fetchall()
+            except:
+                print("Failed to ")
+            finally:
+                curs.close()
+        # 가져온 dbData의 내용을 한행씩 해체하여 블록객체를 생성한 후 , 블록객체리스트에 담는다.
+        getNodeList = []
+        for line in dbData:
+            row = Node(line[0],line[1],line[2])
+            getNodeList.append(row)
+        # 나의 데이터베이스에 저장
+        conn = pymysql.connect(host=DATABASE_SVR_IP, port=DATABASE_SVR_PORT, user=DATABASE_SVR_USER,
+                               passwd=DATABASE_SVR_PW, \
+                               database=DATABASE_SVR_NAME)
+
+        for node in getNodeList:
+            try:
+                with conn.cursor() as curs:
+                    print()
+                    sql = "INSERT INTO " + DATABASE_ND_TABLE + " VALUES (%s,%s,%s)"
+                    curs.execute(sql, (node.ip, node.port, node.tryConnect))
+                    conn.commit()
+            except:
+                print("fail to read node table")
+            finally:
+                conn.close()
+    else:
+        pass
+
+    print("initSvr setting Done...")
     return 1
 
 # This class will handle any incoming request from
@@ -758,16 +834,16 @@ class myHandler(BaseHTTPRequestHandler):
 
             if None != re.search('/block/getBlockData', self.path):
 
-                block = readBlockchain(g_bcFileName, mode='external')
+                blockList = readBlockchain()
 
                 # block의 값이 None인 경우
-                if block == None:
+                if blockList == None:
 
                     print("No Block Exists")
 
                     data.append("no data exists")
                 else:
-                    for i in block:
+                    for i in blockList:
                         print(i.__dict__)
                         data.append(i.__dict__)
 
@@ -820,8 +896,6 @@ class myHandler(BaseHTTPRequestHandler):
                 data = importedNodes
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
 
-        # -----------------------------------------V02 : 완
-        # txData 요청에 대한 response 부분 추가. mode=''인 경우는 모든 데이터를 가져온다.
         elif None != re.search('/txData/*', self.path):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -829,7 +903,7 @@ class myHandler(BaseHTTPRequestHandler):
 
             if None != re.search('/txData/getTxData', self.path):
 
-                txDataList = readTx(g_txFileName, mode='external')
+                txDataList = getTxData(1)
 
                 if txDataList == '':
 
@@ -837,9 +911,7 @@ class myHandler(BaseHTTPRequestHandler):
 
                     data.append("no txData exists")
                 else:
-                    for i in txDataList:
-                        print(i.__dict__)
-                        data.append(i.__dict__)
+                    data = txDataList
 
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
         else:
@@ -953,7 +1025,6 @@ class myHandler(BaseHTTPRequestHandler):
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
-
 
 try:
 
