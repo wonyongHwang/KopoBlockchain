@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+</head>
+
+<body>
+  <input type="text" id="login" placeholder="ID" value="">
+  <input type="button" id="loginBtn" value="가입">
+  <br>
+  <br>
+  <br>
+  <br>
+  <input type="button" id="homeBtn" value="홈으로 돌아가기">
+
+
+
+</body>
+<script src="http://code.jquery.com/jquery-latest.min.js">
+</script>
+<script>
+  var veryFastClicked = false;
+  $("#loginBtn").click(function() {
+    if (veryFastClicked == true) {
+      return
+    }
+    veryFastClicked = true;
+    var id = $("#login").val();
+    var regType1 = new RegExp("[^A-Za-z0-9_]");
+    if (regType1.test(id)) {
+      alert('아이디가 조건에 맞지 않습니다');
+      return
+    } else if (id == '') {
+      alert('아이디를 입력해주세요.');
+      return
+    } else {
+      alert('가입성공');
+    }
+    $.ajax({
+      url: `/id`,
+      data: {
+        id: id
+      },
+      success: function(response) {
+        alert("KEY 번호를 기억해 주세요. \nKEY :" + response);
+        location.href = "/"
+      }
+    });
+  });
+
+  $("#homeBtn").click(function() {
+    location.href = "/"
+  });
+</script>
+
+</html>
