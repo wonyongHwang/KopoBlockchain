@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <style>
+    table {
+      width: 500px;
+    }
+
+    th {
+      background: #eee;
+      padding: 5px;
+    }
+
+    td {
+      text-align: center;
+      padding: 5px;
+    }
+
+    th,
+    td {
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+
+<body>
+  <input type="button" value="getBlockData" id="getBlockData">
+  <input type="button" value="getTxdata" id="getTxdata">
+  <input type="button" value="getNodelist" id="getNodelist">
+</body>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript">
+  $('#getBlockData').click(function() {
+    location.href = 'getBlockData'
+  })
+  $('#getTxdata').click(function() {
+    location.href = 'getTxdata'
+  })
+  $('#getNodelist').click(function() {
+    location.href = 'getNodelist'
+  })
+</script>
+
+</html>

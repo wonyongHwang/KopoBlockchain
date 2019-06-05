@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <style>
+    table {
+      width: 500px;
+    }
+
+    th {
+      background: #eee;
+      padding: 5px;
+    }
+
+    td {
+      text-align: center;
+      padding: 5px;
+    }
+
+    th,
+    td {
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+
+<body>
+  <input type="button" value="addNode" id="addNode"> <input type="button" value="뒤로" id="back"><br>
+  <table id="nodeList">
+    <tr>
+      <th>
+        ip
+      </th>
+      <th>
+        port
+      </th>
+      <th>
+        trial
+      </th>
+    </tr>
+  </table>
+</body>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript">
+  $.ajax({
+    url: `/nodeList`,
+    data: {},
+    success: function(res) {
+      for (var i = 0; i < res.length; i++) {
+        var IP = res[i].IP
+        var PORT = res[i].PORT
+        var TRIAL = res[i].TRIAL
+        $("#nodeList").append(`<tr><td>${IP}</td><td>${PORT}</td><td>${TRIAL}</td>`);
+      }
+    }
+  });
+
+  $('#addNode').click(function() {
+    location.href = '/insertNode'
+  })
+
+  $('#back').click(function() {
+    location.href = '/'
+  })
+</script>
+
+</html>
