@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <link rel="shortcut icon" href="img/favicon.ico">
+  <meta charset="utf-8">
+  <title>BLOCKCHAIN HOME</title>
+  <style>
+    h1 {
+        text-align : center;}
+    h2 {
+        text-align : center;}
+    h3 {
+        text-align : center;}
+  </style>
+</head>
+
+<body>
+  <br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+  <h1><input type="button" id="loginPageBtn" value="가입 페이지"></h1><br>
+  <h2><input type="button" id="txPageBtn" value="송수신 페이지"></h2><br>
+  <h3><input type="button" id="getBlockBtn" value="채굴하기"></h3><br>
+
+</body>
+<script src="http://code.jquery.com/jquery-latest.min.js"> </script>
+<script>
+  $("#loginPageBtn").click(function() {
+    location.href = "/login"
+  });
+  $("#txPageBtn").click(function() {
+    location.href = "/tx"
+  });
+  $("#getBlockBtn").click(function() {
+    location.href = "/mine"
+  });
+</script>
+
+</html>
