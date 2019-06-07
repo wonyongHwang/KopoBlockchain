@@ -15,14 +15,27 @@ from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
 
-PORT_NUMBER = 8099
+# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
+
+# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# for Put Lock objects into variables(lock)
+lock = Lock()
+
+# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# Global variable declaration to broadcast only to user in nodeList.csv
+# Global variable IP_ADDRESS, PORT_NUMBER Changeable
+IP_ADDRESS = "127.0.0.1"
+PORT_NUMBER = 8444
+
+# Global variable g_txFileName, g_bcFileName, g_nodelstFileName,g_difficulty,g_maximumTry Changeable
 g_txFileName = "txData.csv"
 g_bcFileName = "blockchain.csv"
 g_nodelstFileName = "nodelst.csv"
 g_receiveNewBlock = "/node/receiveNewBlock"
 g_difficulty = 2
 g_maximumTry = 100
-g_nodeList = {'trustedServerAddress':'8099'} # trusted server list, should be checked manually
+g_nodeList = {'trustedServerAddress':'8444'} # trusted server list, should be checked manually
 
 
 class Block:
@@ -46,7 +59,6 @@ class txData:
         self.amount = amount
         self.receiver = receiver
         self.uuid =  uuid
-
 
 def generateGenesisBlock():
     print("generateGenesisBlock is called")
@@ -75,15 +87,23 @@ def generateNextBlock(blockchain, blockData, timestamp, proof):
     # index, previousHash, timestamp, data, currentHash, proof
     return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash,proof)
 
+
+# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# /* WriteBlockchain function Update */
+# If the 'blockchain.csv' file is already open, make it inaccessible via lock.acquire()
+# After executing the desired operation, changed to release the lock.(lock.release())
+# Reason for time.sleep ():
+# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
 def writeBlockchain(blockchain):
+
     blockchainList = []
 
     for block in blockchain:
+
         blockList = [block.index, block.previousHash, str(block.timestamp), block.data, block.currentHash,block.proof ]
         blockchainList.append(blockList)
 
     #[STARAT] check current db(csv) if broadcasted block data has already been updated
-    lastBlock = None
     try:
         with open(g_bcFileName, 'r',  newline='') as file:
             blockReader = csv.reader(file)
@@ -102,18 +122,29 @@ def writeBlockchain(blockchain):
         pass
         #return
     # [END] check current db(csv)
-
-    with open(g_bcFileName, "w", newline='') as file:
-        writer = csv.writer(file)
-        writer.writerows(blockchainList)
-
-    # update txData cause it has been mined.
-    for block in blockchain:
-        updateTx(block)
-
-    print('Blockchain written to blockchain.csv.')
-    print('Broadcasting new block to other nodes')
-    broadcastNewBlock(blockchain)
+    openFile = False
+    while not openFile:
+        if blockchainList != []:
+            try:
+                lock.acquire()
+                with open(g_bcFileName, "w", newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerows(blockchainList)
+                    blockchainList.clear()
+                    print("write ok")
+                    openFile = True
+                    for block in blockchain:
+                        updateTx(block)
+                    print('Blockchain written to blockchain.csv.')
+                    print('Broadcasting new block to other nodes')
+                    broadcastNewBlock(blockchain)
+                    lock.release()
+            except:
+                    time.sleep(3)
+                    print("writeBlockchain file open error")
+                    lock.release()
+        else:
+            print("Blockchain is empty")
 
 def readBlockchain(blockchainFilePath, mode = 'internal'):
     print("readBlockchain")
@@ -164,26 +195,47 @@ def updateTx(blockData) :
     tempfile.close()
     print('txData updated')
 
+# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# /* writeTx function Update */
+# If the 'txData.csv' file is already open, make it inaccessible via lock.acquire()
+# After executing the desired operation, changed to release the lock.(lock.release())
+# Reason for time.sleep ():
+# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
+# Removed temp files to reduce memory usage and increase work efficiency.
 def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
+    txOriginalList = []
     for txDatum in txRawData:
         txList = [txDatum.commitYN, txDatum.sender, txDatum.amount, txDatum.receiver, txDatum.uuid]
         txDataList.append(txList)
 
-    tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
     try:
-        with open(g_txFileName, 'r', newline='') as csvfile, tempfile:
+        with open(g_txFileName, 'r', newline='') as csvfile:
             reader = csv.reader(csvfile)
-            writer = csv.writer(tempfile)
             for row in reader:
-                if row :
-                    writer.writerow(row)
-            # adding new tx
-            writer.writerows(txDataList)
-        shutil.move(tempfile.name, g_txFileName)
-        csvfile.close()
-        tempfile.close()
+                txOriginalList.append(row)
+
+            openWriteTx = False
+            while not openWriteTx:
+                lock.acquire()
+                try:
+                    print("NewTxData lock.acquire")
+                    with open(g_txFileName, 'w', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        # adding new tx
+                        writer.writerows(txOriginalList)
+                        writer.writerows(txDataList)
+                        print("writeTx write ok")
+                        csvfile.close()
+                        openWriteTx = True
+                        lock.release()
+
+                except Exception as e:
+                    print(e)
+                    time.sleep(3)
+                    print("file open error")
+                    lock.release()
     except:
         # this is 1st time of creating txFile
         try:
@@ -285,8 +337,36 @@ def isValidNewBlock(newBlock, previousBlock):
 def newtx(txToMining):
 
     newtxData = []
+
+    # 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
     # transform given data to txData object
+    # Using regular expressions newTx property type Exception handling
     for line in txToMining:
+
+        # If amount is not a number, replace it with '0'
+        if re.compile("\D").search(line['amount']):
+            print("Amount only type of number")
+            line['amount'] = "0"
+        elif re.compile("\d").search(line['amount']):
+            line['amount'] = line['amount']
+        elif line['amount'] == "":
+            print("Null value error")
+            line['amount'] = "0"
+
+        # if sender is not in email format, replace it with "anonymous"
+        if re.compile("(\w+\.)*\w+@(\w+\.)+[A-Za-z]+").search(line['sender']):
+            line['sender'] = line['sender']
+        else:
+            print("Receiver only e-mail address type")
+            line['sender'] = "anonymous"
+
+        # if receiver is not in email format, replace it with "anonymous"
+        if re.compile("(\w+\.)*\w+@(\w+\.)+[A-Za-z]+").search(line['receiver']):
+            line['receiver'] = line['receiver']
+        else:
+            print("Receiver only e-mail address type")
+            line['receiver'] = "anonymous"
+
         tx = txData(0, line['sender'], line['amount'], line['receiver'], uuid.uuid4())
         newtxData.append(tx)
 
@@ -333,8 +413,8 @@ def isValidChain(bcToValidate):
         print('Genesis Block Incorrect')
         return False
 
-    #tempBlocks = [bcToValidateForBlock[0]]
-    #for i in range(1, len(bcToValidateForBlock)):
+    # tempBlocks = [bcToValidateForBlock[0]]
+    # for i in range(1, len(bcToValidateForBlock)):
     #    if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
     #        tempBlocks.append(bcToValidateForBlock[i])
     #    else:
@@ -346,39 +426,63 @@ def isValidChain(bcToValidate):
 
     return True
 
+# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# /* addNode function Update */
+# If the 'nodeList.csv' file is already open, make it inaccessible via lock.acquire()
+# After executing the desired operation, changed to release the lock.(lock.release())
+# Reason for time.sleep ():
+# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
+# Removed temp files to reduce memory usage and increase work efficiency.
 def addNode(queryStr):
     # save
-    txDataList = []
-    txDataList.append([queryStr[0],queryStr[1],0]) # ip, port, # of connection fail
+    previousList = []
+    nodeList = []
+    nodeList.append([queryStr[0],queryStr[1],0]) # ip, port, # of connection fail
 
-    tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
     try:
-        with open(g_nodelstFileName, 'r', newline='') as csvfile, tempfile:
+        with open(g_nodelstFileName, 'r', newline='') as csvfile:
             reader = csv.reader(csvfile)
-            writer = csv.writer(tempfile)
             for row in reader:
                 if row:
                     if row[0] == queryStr[0] and row[1] == queryStr[1]:
                         print("requested node is already exists")
                         csvfile.close()
-                        tempfile.close()
+                        nodeList.clear()
                         return -1
                     else:
-                        writer.writerow(row)
-            writer.writerows(txDataList)
-        shutil.move(tempfile.name, g_nodelstFileName)
-        csvfile.close()
-        tempfile.close()
+                        previousList.append(row)
+
+            openFile3 = False
+            while not openFile3:
+                lock.acquire()
+                try:
+                    with open(g_nodelstFileName, 'w', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerows(nodeList)
+                        writer.writerows(previousList)
+                        csvfile.close()
+                        nodeList.clear()
+                        lock.release()
+                        print('new node written to nodelist.csv.')
+                        return 1
+                except Exception as ex:
+                    print(ex)
+                    time.sleep(3)
+                    print("file open error")
+                    lock.release()
+
     except:
         # this is 1st time of creating node list
         try:
             with open(g_nodelstFileName, "w", newline='') as file:
                 writer = csv.writer(file)
-                writer.writerows(txDataList)
-        except:
+                writer.writerows(nodeList)
+                nodeList.clear()
+                print('new node written to nodelist.csv.')
+                return 1
+        except Exception as ex:
+            print(ex)
             return 0
-    return 1
-    print('new node written to nodelist.csv.')
 
 def readNodes(filePath):
     print("read Nodes")
@@ -398,8 +502,10 @@ def readNodes(filePath):
 def broadcastNewBlock(blockchain):
     #newBlock  = getLatestBlock(blockchain) # get the latest block
     importedNodes = readNodes(g_nodelstFileName) # get server node ip and port
+
     reqHeader = {'Content-Type': 'application/json; charset=utf-8'}
     reqBody = []
+
     for i in blockchain:
         reqBody.append(i.__dict__)
 
