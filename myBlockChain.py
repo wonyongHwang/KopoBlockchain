@@ -14,36 +14,21 @@ import uuid
 from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
-#문자열끼리 비교하기 위한 모듈
-from operator import eq
-#Process, Lock을 하기 위한 모듈
-from multiprocessing import Process, Lock
 
-#***********************************************************************************************************************************************************************************************
-#***********************************************************************************************************************************************************************************************
-# 저희 조에서는 멀티프로세싱(multiprocessing)을 추가했습니다.                                                                                                                                  *
-# 기존에는 csv 파일이 쓰여질 때, 다른 포트 등에서 작업 중일 경우 파일 작성이 불가했습니다.                                                                                                     *
-# 저희는 이를 수정하기 위해 csv 파일이 열려있을 경우, 블록체인과 거래내역의 작성이 중지되다가 csv 파일이 닫히면 새로운 내역이 반영되어 csv 파일이 작성되도록 코드를 수정했습니다.              *
-# 이를 위해서 csv(blockchain, txData, nodelist)를 write하는 부분에서 Lock()을 이용해서 lock에 내장된 메소드 acquire를 통해 lock을 걸고, release를 통해서 lock을 풀어주는 방식을 활용했습니다.  *
-# 그외에도 newTx에 이상한 값이 들어왔을 때의 예외처리, nodelist.csv 파일에 없는 노드가 broadcast되는 문제를 예외처리 하였습니다.                                                               *
-#                                                                                                                                                                                              *
-# blockchain_Upgrade Ver2.0 (writer : 김유림, 김해리, 박종선, 서보국, 이형섭, 송진우)                                                                                                          *
-#***********************************************************************************************************************************************************************************************
-#***********************************************************************************************************************************************************************************************
+# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 
+# for Put Lock objects into variables(lock)
 lock = Lock()
-nodeList = []
-blockchainList = []
 
-IP_ADDRESS = "127.0.0.1"
-PORT_NUMBER = 8777
+PORT_NUMBER = 8666
 g_txFileName = "txData.csv"
 g_bcFileName = "blockchain.csv"
 g_nodelstFileName = "nodelst.csv"
 g_receiveNewBlock = "/node/receiveNewBlock"
 g_difficulty = 2
 g_maximumTry = 100
-g_nodeList = {'127.0.0.1':'8099'} # trusted server list, should be checked manually
+g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
 
 
 class Block:
@@ -67,7 +52,6 @@ class txData:
         self.amount = amount
         self.receiver = receiver
         self.uuid =  uuid
-
 
 def generateGenesisBlock():
     print("generateGenesisBlock is called")
@@ -96,7 +80,16 @@ def generateNextBlock(blockchain, blockData, timestamp, proof):
     # index, previousHash, timestamp, data, currentHash, proof
     return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash,proof)
 
+
+# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# /* WriteBlockchain function Update */
+# If the 'blockchain.csv' file is already open, make it inaccessible via lock.acquire()
+# After executing the desired operation, changed to release the lock.(lock.release())
+# Reason for time.sleep ():
+# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
 def writeBlockchain(blockchain):
+
+    blockchainList = []
 
     for block in blockchain:
 
@@ -130,7 +123,7 @@ def writeBlockchain(blockchain):
                 with open(g_bcFileName, "w", newline='') as file:
                     writer = csv.writer(file)
                     writer.writerows(blockchainList)
-                    blockchainList.clear()  ##===========================================> blockchainList가 전역이라 블록을 반복해서 생성할 경우에는 블록체인리스트 배열에 블록정보가 쌓여서 이미 있는 블록을 또 써, 파일을 write 한 후에는 비워줘야 해요
+                    blockchainList.clear()
                     print("write ok")
                     openFile = True
                     for block in blockchain:
@@ -138,18 +131,13 @@ def writeBlockchain(blockchain):
                     print('Blockchain written to blockchain.csv.')
                     print('Broadcasting new block to other nodes')
                     broadcastNewBlock(blockchain)
-                    lock.release()  ##============================================> p 계속해서 사용할 수 있도록 해줌
+                    lock.release()
             except:
                     time.sleep(3)
-                    print("file open error")
+                    print("writeBlockchain file open error")
                     lock.release()
         else:
             print("Blockchain is empty")
-
-if __name__ == '__main__':
-    p = Process(target=writeBlockchain, args=blockchainList)
-    p.start()
-    # p.join()
 
 def readBlockchain(blockchainFilePath, mode = 'internal'):
     print("readBlockchain")
@@ -195,23 +183,25 @@ def updateTx(blockData) :
                 row[0] = 1
             writer.writerow(row)
 
-    # 수정!!!!!!!!!!
-    # tempfile이 닫히기도전에 txData파일과 바꾸면 프로세싱을 잡고 있어서 오류가 발생함.
-    # 해결방법 : 먼저 tempfile을 닫아줘야함.
+    shutil.move(tempfile.name, g_txFileName)
     csvfile.close()
     tempfile.close()
-    shutil.move(tempfile.name, g_txFileName)
     print('txData updated')
 
-def writeTx(txRawData): #==============================================================> temp 파일을 사용하지 않는 writeTx() / 메모리 사용을 줄여 작업의 효율성을 높였습니다.
+# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# /* writeTx function Update */
+# If the 'txData.csv' file is already open, make it inaccessible via lock.acquire()
+# After executing the desired operation, changed to release the lock.(lock.release())
+# Reason for time.sleep ():
+# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
+# Removed temp files to reduce memory usage and increase work efficiency.
+def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
     txOriginalList = []
     for txDatum in txRawData:
         txList = [txDatum.commitYN, txDatum.sender, txDatum.amount, txDatum.receiver, txDatum.uuid]
         txDataList.append(txList)
-
-    # tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
 
     try:
         with open(g_txFileName, 'r', newline='') as csvfile:
@@ -340,44 +330,8 @@ def isValidNewBlock(newBlock, previousBlock):
 def newtx(txToMining):
 
     newtxData = []
-
-    # newTx 예외처리
     # transform given data to txData object
     for line in txToMining:
-        # amount가 숫자가 아닌경우 "0"으로 바꿔줌
-        if re.compile("\D").search(line['amount']):
-            print("Amount only type of number")
-            line['amount'] = "0"
-
-        # amount가 숫자인 경우 그대로
-        elif re.compile("\d").search(line['amount']):
-            line['amount'] = line['amount']
-
-        # amount가 null값인 경우 "0"으로 바꿔줌
-        elif line['amount'] == "":
-            print("Null value error")
-            line['amount'] = "0"
-
-        # sender가 문자나 숫자가 아닌 것(특수문자,whitespace)을 "anonymous"로 바꿔줌
-        if re.compile("\W").search(line['sender']):
-            print("Sender only character or number")
-            line['sender'] = "anonymous"
-
-        # sender가 공백인 경우 "anonymous"로 바꿔줌
-        elif line['sender'] == "":
-            print("Sender only character or number")
-            line['sender'] = "anonymous"
-
-        # receiver가 문자나 숫자가 아닌 것(특수문자,whitespace)을 "anonymous"로 바꿔줌
-        if re.compile("\W").search(line['receiver']):
-            print("Receiver only character or number")
-            line['receiver'] = "anonymous"
-
-        # receiver가 가 공백인 경우 "anonymous"로 바꿔줌
-        elif line['receiver'] == "":
-            print("Receiver only character or number")
-            line['receiver'] = "anonymous"
-
         tx = txData(0, line['sender'], line['amount'], line['receiver'], uuid.uuid4())
         newtxData.append(tx)
 
@@ -387,11 +341,7 @@ def newtx(txToMining):
         return -1
 
     if writeTx(newtxData) == 0:
-        if __name__ == '__main__': #=====================================================================> writeTx() 가 실행될 때, 프로세스를 실행하기 위해 추가한 부분입니다.
-            pwriteTx = Process(target=writeTx, args=newtxData)
-            pwriteTx.start()  #================================================================> 여기서 프로세스 시작~
-            # p.join()
-        print("newtx - return2")
+        print("file write error on txData")
         return -2
     return 1
 
@@ -428,8 +378,8 @@ def isValidChain(bcToValidate):
         print('Genesis Block Incorrect')
         return False
 
-    #tempBlocks = [bcToValidateForBlock[0]]
-    #for i in range(1, len(bcToValidateForBlock)):
+    # tempBlocks = [bcToValidateForBlock[0]]
+    # for i in range(1, len(bcToValidateForBlock)):
     #    if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
     #        tempBlocks.append(bcToValidateForBlock[i])
     #    else:
@@ -441,9 +391,17 @@ def isValidChain(bcToValidate):
 
     return True
 
+# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# /* addNode function Update */
+# If the 'nodeList.csv' file is already open, make it inaccessible via lock.acquire()
+# After executing the desired operation, changed to release the lock.(lock.release())
+# Reason for time.sleep ():
+# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
+# Removed temp files to reduce memory usage and increase work efficiency.
 def addNode(queryStr):
     # save
     previousList = []
+    nodeList = []
     nodeList.append([queryStr[0],queryStr[1],0]) # ip, port, # of connection fail
 
     try:
@@ -454,7 +412,6 @@ def addNode(queryStr):
                     if row[0] == queryStr[0] and row[1] == queryStr[1]:
                         print("requested node is already exists")
                         csvfile.close()
-                        # tempfile.close()
                         nodeList.clear()
                         return -1
                     else:
@@ -470,7 +427,6 @@ def addNode(queryStr):
                         writer.writerows(previousList)
                         csvfile.close()
                         nodeList.clear()
-
                         lock.release()
                         print('new node written to nodelist.csv.')
                         return 1
@@ -493,10 +449,6 @@ def addNode(queryStr):
             print(ex)
             return 0
 
-if __name__ == '__main__':
-    p3 = Process(target=addNode, args=nodeList)
-    p3.start()
-
 def readNodes(filePath):
     print("read Nodes")
     importedNodes = []
@@ -515,55 +467,47 @@ def readNodes(filePath):
 def broadcastNewBlock(blockchain):
     #newBlock  = getLatestBlock(blockchain) # get the latest block
     importedNodes = readNodes(g_nodelstFileName) # get server node ip and port
+    reqHeader = {'Content-Type': 'application/json; charset=utf-8'}
+    reqBody = []
+    for i in blockchain:
+        reqBody.append(i.__dict__)
 
-    # nodeList점검 후 broadcastNewBlock 부분
-    # 첫번째 비교 portnumber 전자는 node.csv에서 읽어온 portnumber //후자는 현재 portnumber
-    # 두번째 비교 ip 전자는 node.csv에서 읽어온 ip// 후자는 현재 ip
-    # string끼리 비교할때 == 이 안먹혀서  eq 라이브러리 import
-    for i in range(0, len(importedNodes)):
-        if (eq(importedNodes[i][1], str(PORT_NUMBER)) & eq(importedNodes[i][0], IP_ADDRESS)):
-            reqHeader = {'Content-Type': 'application/json; charset=utf-8'}
-            reqBody = []
-            for i in blockchain:
-                reqBody.append(i.__dict__)
-
-            if len(importedNodes) > 0 :
-                for node in importedNodes:
-                    try:
-                        URL = "http://" + node[0] + ":" + node[1] + g_receiveNewBlock  # http://ip:port/node/receiveNewBlock
-                        res = requests.post(URL, headers=reqHeader, data=json.dumps(reqBody))
-                        if res.status_code == 200:
-                            print(URL + " sent ok.")
-                            print("Response Message " + res.text)
-                        else:
-                            print(URL + " responding error " + res.status_code)
-                    except:
-                        print(URL + " is not responding.")
-                        # write responding results
-                        tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
-                        try:
-                            with open(g_nodelstFileName, 'r', newline='') as csvfile, tempfile:
-                                reader = csv.reader(csvfile)
-                                writer = csv.writer(tempfile)
-                                for row in reader:
-                                    if row:
-                                        if row[0] == node[0] and row[1] ==node[1]:
-                                            print("connection failed "+row[0]+":"+row[1]+", number of fail "+row[2])
-                                            tmp = row[2]
-                                            # too much fail, delete node
-                                            if int(tmp) > g_maximumTry:
-                                                print(row[0]+":"+row[1]+" deleted from node list because of exceeding the request limit")
-                                            else:
-                                                row[2] = int(tmp) + 1
-                                                writer.writerow(row)
-                                        else:
-                                            writer.writerow(row)
-                            csvfile.close()
-                            tempfile.close()
-                            shutil.move(tempfile.name, g_nodelstFileName)
-
-                        except:
-                            print("caught exception while updating node list")
+    if len(importedNodes) > 0 :
+        for node in importedNodes:
+            try:
+                URL = "http://" + node[0] + ":" + node[1] + g_receiveNewBlock  # http://ip:port/node/receiveNewBlock
+                res = requests.post(URL, headers=reqHeader, data=json.dumps(reqBody))
+                if res.status_code == 200:
+                    print(URL + " sent ok.")
+                    print("Response Message " + res.text)
+                else:
+                    print(URL + " responding error " + res.status_code)
+            except:
+                print(URL + " is not responding.")
+                # write responding results
+                tempfile = NamedTemporaryFile(mode='w', newline='', delete=False)
+                try:
+                    with open(g_nodelstFileName, 'r', newline='') as csvfile, tempfile:
+                        reader = csv.reader(csvfile)
+                        writer = csv.writer(tempfile)
+                        for row in reader:
+                            if row:
+                                if row[0] == node[0] and row[1] ==node[1]:
+                                    print("connection failed "+row[0]+":"+row[1]+", number of fail "+row[2])
+                                    tmp = row[2]
+                                    # too much fail, delete node
+                                    if int(tmp) > g_maximumTry:
+                                        print(row[0]+":"+row[1]+" deleted from node list because of exceeding the request limit")
+                                    else:
+                                        row[2] = int(tmp) + 1
+                                        writer.writerow(row)
+                                else:
+                                    writer.writerow(row)
+                    shutil.move(tempfile.name, g_nodelstFileName)
+                    csvfile.close()
+                    tempfile.close()
+                except:
+                    print("caught exception while updating node list")
 
 def row_count(filename):
     try:
