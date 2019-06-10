@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<XMLHTT <html lang="en" dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <style>
+      table {
+        width: 500px;
+      }
+
+      th {
+        background: #eee;
+        padding: 5px;
+      }
+
+      td {
+        text-align: center;
+        padding: 5px;
+      }
+
+      th,
+      td {
+        border: 1px solid #eee;
+      }
+    </style>
+  </head>
+
+  <body>
+    블럭의 갯수 : <span id="total"></span><br>
+    시작 : <input type="number" id="start" min='1'><br>
+    끝 : <input type="number" id="end"><br>
+    <input type="button" value="검색" id="search"> <input type="button" value="뒤로" id="back">
+
+    <span id='text'></span><br>
+    <table id="blockList">
+
+    </table>
+
+    <br>
+  </body>
+  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <script type="text/javascript">
+    $.ajax({
+      url: 'http://localhost:8099/block/getBlockData',
+      dataType: 'json',
+      data: {},
+      success: function(result) {
+        if (result[0] == "no data exists") {
+          $("#blockList").html()
+          $("#text").html('블럭이 업서용 ><')
+        } else {
+          $("#text").html()
+          $("#blockList").html('<tr><th>NO</th><th>PREVIOUSHASH</th><th>TIMESTAMP</th><th>DATA</th><th>CURRENTHASH</th><th>PROOF</th><th>FEE</th><th>SIGNATURE</th></tr>')
+          for (var i = 0; i < result.length; i++) {
+            var NO = result[i].no
+            var PREVIOUSHASH = result[i].previousHash
+            var TIMESTAMP = result[i].timestamp
+            var DATA = result[i].data
+            var CURRENTHASH = result[i].currentHash
+            var PROOF = result[i].proof
+            var FEE = result[i].fee
+            var SIGNATURE = result[i].signature
+            $("#blockList").append(`<tr><td>${NO}</td><td>${PREVIOUSHASH}</td><td>${TIMESTAMP}</td><td>${DATA}</td><td>${CURRENTHASH}</td><td>${PROOF}</td><td>${FEE}</td><td>${SIGNATURE}</td></tr>`);
+          }
+          total = result.length
+          $("#total").html(total)
+        }
+      }
+    });
+
+    $('#search').click(function() {
+      $.ajax({
+        url: `http://localhost:8099/block/getBlockData`,
+        dataType: 'json',
+        data: {
+          start: $('#start').val(),
+          end: $('#end').val()
+        },
+        success: function(result) {
+          console.log(result);
+          if (result.length < 1) {
+            $("#blockList").html()
+            $("#text").html('블럭이 업서용 ><')
+          } else {
+            $("#text").html()
+            $("#blockList").html('<tr><th>NO</th><th>PREVIOUSHASH</th><th>TIMESTAMP</th><th>DATA</th><th>CURRENTHASH</th><th>PROOF</th><th>FEE</th><th>SIGNATURE</th></tr>')
+            for (var i = 0; i < result.length; i++) {
+              var NO = result[i].no
+              var PREVIOUSHASH = result[i].previousHash
+              var TIMESTAMP = result[i].timestamp
+              var DATA = result[i].data
+              var CURRENTHASH = result[i].currentHash
+              var PROOF = result[i].proof
+              var FEE = result[i].fee
+              var SIGNATURE = result[i].signature
+              $("#blockList").append(`<tr><td>${NO}</td><td>${PREVIOUSHASH}</td><td>${TIMESTAMP}</td><td>${DATA}</td><td>${CURRENTHASH}</td><td>${PROOF}</td><td>${FEE}</td><td>${SIGNATURE}</td></tr>`);
+            }
+          }
+        }
+      });
+    })
+
+    $('#back').click(function() {
+      location.href = '/'
+    })
+  </script>
+
+  </html>
