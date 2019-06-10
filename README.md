@@ -1,6 +1,6 @@
 # [LOCK] - Project on Refining Blockchain Code(myBlockchain.py)
 
-Authors: BohKuK Seo, HaeRi Kim, JinWoo Song, JongSun Park, YuRim Kim
+Authors: BohKuK Seo, HaeRi Kim, JinWoo Song, JongSun Park, YuRim Kim, HyeongSeob Lee
 
 Written on 05.June.2019
 
