@@ -8,10 +8,11 @@ Writer: JaeWon Park, KyungHyun Kim, SinWoo Lee, YeEun Jeong, SeulKi Kwon, SeongR
 ## Introduction
 ***
 ![ShardingSphere Scope](https://i.imgur.com/inl1PTH.png)
-Here is our project Keypoint.
-First, The transaction pool is separated. To implement it as similar as actual blockchain system as possible, We added a merkle hash and separate Transaction Pool code from master's blockchain code.
-Second, After running multiple servers, the list is saved in the AWS provided server's DB for freely doing synchronization. A total of three servers were operated at the same time by using Ubuntu servers. It would be easy to understand if you think of servers as Bitcoin miners. A list of these servers is stored in the DB of the servers provided by AWS through the serverList code.
-Last, It is off limits using csv file in the master's code. The transaction data or blockchain information that is accumulated in the csv file is saved and synchronized to the DB linked to each server.
+Here is our project Keypoint.  
+First, The transaction pool is separated. To implement it as similar as actual blockchain system as possible, We added a merkle hash and separate Transaction Pool code from master's blockchain code.  
+Second, After running multiple servers, the list is saved in the AWS provided server's DB for freely doing synchronization. A total of three servers were operated at the same time by using Ubuntu servers.  
+It would be easy to understand if you think of servers as Bitcoin miners. A list of these servers is stored in the DB of the servers provided by AWS through the serverList code.  
+Last, It is off limits using csv file in the master's code. The transaction data or blockchain information that is accumulated in the csv file is saved and synchronized to the DB linked to each server.  
 
 ## Technologies
 ***
@@ -33,49 +34,49 @@ Last, It is off limits using csv file in the master's code. The transaction data
 ***
 ### Set test interface
 ### Configure the test environment as following :
-  Number of running transactionPool.py = 1
-  Number of running serverlist.py = 1
-  Number of running blockchain.py = 3
+* Number of running transactionPool.py = 1
+* Number of running serverlist.py = 1
+* Number of running blockchain.py = 3
 
-  Number of running transaction database = 1
-  Number of running serverlist database = 1
-  Number of running blockchain & nodelist database = 3
+* Number of running transaction database = 1
+* Number of running serverlist database = 1
+* Number of running blockchain & nodelist database = 3
 ### Configure database according to each code :
 #### blockchain.py & transactionPool.py
   1) Create virtual machines in Oracle VM VirtualBox for the database matching each code.
   2) Install uunut-16.04.3-server-amd64 on each virtual machine.
   3) Install mysql 5.7 on each ubuntu server
   4) Modify LISTEN IP bandwidth and port number:
-     ```
-     ~$sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
-     ```
-     you can search bind-adress, and comment out for listen all ip bandwidth.
+   ```
+   ~$sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+   ```
+     you can search bind-adress, and comment out for listen all ip bandwidth.  
      also, you can find port, and set port number you want.
   5) Allow MySQL ports in the Ubuntu firewall for external access.
-     ```
-     ~$sudo ufw 3306(default number or you set)/tcp
-     ```
+   ```
+   ~$sudo ufw 3306(default number or you set)/tcp
+   ```
   6) Create database.
-  7) Create a account and set permissions on the database that has been created.
+  7) Create a account and set permissions on the database that has been created.  
      For testing only, it is convenient to give the root full authority.
   8) Restart mysql service.   
   9) Set up port forwarding on the network of the virtual machine to connect to mysql.
-##### serverlist.py
+#### serverlist.py
   1) Uses EC2 virtual machines in aws (Amazon Web Service).
   2) Select ubuntu Server 16.04 LTS to create an instance.
   3) Connect with putty and install mysql 5.7.
   4) Modify LISTEN IP bandwidth and port number:
-     ```
-     ~$sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
-     ```
-     you can search bind-adress, and comment out for listen all ip bandwidth.
+   ```
+   ~$sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+   ```
+     you can search bind-adress, and comment out for listen all ip bandwidth.  
      also, you can find port, and set port number you want.
   5) Allow MySQL ports in the Ubuntu firewall for external access.
-     ```
-     ~$sudo ufw 3306(default number or you set)/tcp
-     ```
+   ```
+   ~$sudo ufw 3306(default number or you set)/tcp
+   ```
   6) Create database.
-  7) Create a account and set permissions on the database that has been created.
+  7) Create a account and set permissions on the database that has been created.  
      For testing only, it is convenient to give the root full authority.
   8) Restart mysql service.   
   9) Create new Security Group for connecting on mysql database.
@@ -124,7 +125,7 @@ DATABASE_MINER_LIST_PORT = 8081
 MASTER = True
 SERVE = False
 ```
-* IP_NUMBER = The ip address of this code(myBlockchain.py) stored in the table of the serverlist server.
+* IP_NUMBER = The ip address of this code(myBlockchain.py) stored in the table of the serverlist server.  
 If all codes run locally, set to 127.0.0.1. If each codes run each other place, you can get ip address using this code.
 
 ```
@@ -170,11 +171,11 @@ DATABASE_TABLE = "SERVERLIST"
 ## Test case with Postman
 ### For each running code, you can request the following url(Except internal url request) :
 #### transactionPool.py
-* Method GET :
+* Method GET :  
   http://ipAddressOfCode:portNumberOfCode/getTxData/all
-* Method POST :
-  http://ipAddressOfCode:portNumberOfCode/txData/new
-  * body :
+* Method POST :  
+  http://ipAddressOfCode:portNumberOfCode/txData/new  
+  * body :  
   ```
   [
       {
@@ -186,8 +187,8 @@ DATABASE_TABLE = "SERVERLIST"
   ]
   ```
 #### myBlockchain.py
-* Method GET :
-  http://ipAddressOfCode:portNumberOfCode/block/getBlockData
-  http://ipAddressOfCode:portNumberOfCode/block/generateBlock
-  http://ipAddressOfCode:portNumberOfCode/node/addNode
-  http://ipAddressOfCode:portNumberOfCode/node/getNode
+* Method GET :  
+  http://ipAddressOfCode:portNumberOfCode/block/getBlockData  
+  http://ipAddressOfCode:portNumberOfCode/block/generateBlock  
+  http://ipAddressOfCode:portNumberOfCode/node/addNode  
+  http://ipAddressOfCode:portNumberOfCode/node/getNode  
