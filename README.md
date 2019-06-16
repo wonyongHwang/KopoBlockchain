@@ -154,7 +154,7 @@ socket.gethostbyname(socket.getfqdn())
 ```
 PORT_NUMBER = 8081
 DATABASE_NAME = "serverlist"
-DATABASE_IP = '54.180.95.227'
+DATABASE_IP = '127.0.0.1'
 DATABASE_PORT = 3306
 DATABASE_USER = "root"
 DATABASE_PW = "root"
