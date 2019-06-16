@@ -7,7 +7,8 @@ Writer: JaeWon Park, KyungHyun Kim, SinWoo Lee, YeEun Jeong, SeulKi Kwon, SeongR
 
 ## Introduction
 ***
-![ShardingSphere Scope](https://i.imgur.com/inl1PTH.png)
+###System Configuration
+![ShardingSphere Scope](https://imgur.com/mFxYRWz.png)
 Here is our project Keypoint.  
 First, The transaction pool is separated. To implement it as similar as actual blockchain system as possible, We added a merkle hash and separate Transaction Pool code from master's blockchain code.  
 Second, After running multiple servers, the list is saved in the AWS provided server's DB for freely doing synchronization. A total of three servers were operated at the same time by using Ubuntu servers.  
