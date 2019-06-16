@@ -7,7 +7,7 @@ Writer: JaeWon Park, KyungHyun Kim, SinWoo Lee, YeEun Jeong, SeulKi Kwon, SeongR
 
 ## Introduction
 ***
-###System Configuration
+### System Configuration
 ![ShardingSphere Scope](https://imgur.com/mFxYRWz.png)
 Here is our project Keypoint.  
 First, The transaction pool is separated. To implement it as similar as actual blockchain system as possible, We added a merkle hash and separate Transaction Pool code from master's blockchain code.  
