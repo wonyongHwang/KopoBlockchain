@@ -93,15 +93,15 @@ DATABASE_TP_USER = "root"
 DATABASE_TP_PW = "root"
 DATABASE_TP_TABLE = "TRANSACTION_POOL"
 ```
-PORT_NUMBER = The port number where this code(transactionPool.py) exists.
-MAX_GET_DATA_LISTS = Maximum number of transactions received from a node at once
-MAX_NUMBER_OF_TX = Maximum number of transactions to be sent to blockchain code server
-DATABASE_TP_NAME = Name of database for transaction details
-DATABASE_TP_IP = Ip address of database for transaction details
-DATABASE_TP_PORT = Port Number of database for transaction details
-DATABASE_TP_USER = Mysql user name of database for transaction details
-DATABASE_TP_PW = Mysql password of database for transaction details
-DATABASE_TP_TABLE = Table name of database for transaction details
+* PORT_NUMBER = The port number where this code(transactionPool.py) exists.
+* MAX_GET_DATA_LISTS = Maximum number of transactions received from a node at once
+* MAX_NUMBER_OF_TX = Maximum number of transactions to be sent to blockchain code server
+* DATABASE_TP_NAME = Name of database for transaction details
+* DATABASE_TP_IP = Ip address of database for transaction details
+* DATABASE_TP_PORT = Port Number of database for transaction details
+* DATABASE_TP_USER = Mysql user name of database for transaction details
+* DATABASE_TP_PW = Mysql password of database for transaction details
+* DATABASE_TP_TABLE = Table name of database for transaction details
 #### myBlockchain.py
 ```
 IP_NUMBER = "127.0.0.1"
@@ -124,30 +124,30 @@ DATABASE_MINER_LIST_PORT = 8081
 MASTER = True
 SERVE = False
 ```
-IP_NUMBER = The ip address of this code(myBlockchain.py) stored in the table of the serverlist server.
+* IP_NUMBER = The ip address of this code(myBlockchain.py) stored in the table of the serverlist server.
 If all codes run locally, set to 127.0.0.1. If each codes run each other place, you can get ip address using this code.
 
 ```
 socket.gethostbyname(socket.getfqdn())
 ```
 
-PORT_NUMBER = The port number where your code(myBlockchain.py) exists.
+* PORT_NUMBER = The port number where your code(myBlockchain.py) exists.
 
-DATABASE_SVR_NAME = Name of database for blockchain and nodelist data of this code
-DATABASE_SVR_IP = Ip address of database for blockchain and nodelist data of this code
-DATABASE_SVR_PORT = Port Number of database for blockchain and nodelist data of this code
-DATABASE_SVR_USER = Mysql user name of database for blockchain and nodelist data of this code
-DATABASE_SVR_PW = Mysql password of database for blockchain and nodelist data of this code
-DATABASE_BC_TABLE = Block chain table name of database for transaction details
-DATABASE_ND_TABLE = Nodelist table name of database for transaction details
+* DATABASE_SVR_NAME = Name of database for blockchain and nodelist data of this code
+* DATABASE_SVR_IP = Ip address of database for blockchain and nodelist data of this code
+* DATABASE_SVR_PORT = Port Number of database for blockchain and nodelist data of this code
+* DATABASE_SVR_USER = Mysql user name of database for blockchain and nodelist data of this code
+* DATABASE_SVR_PW = Mysql password of database for blockchain and nodelist data of this code
+* DATABASE_BC_TABLE = Block chain table name of database for transaction details
+* DATABASE_ND_TABLE = Nodelist table name of database for transaction details
 
-DATABASE_TPSVR_IP = Ip address and port number of transactionpool.py
+* DATABASE_TPSVR_IP = Ip address and port number of transactionpool.py
 
-DATABASE_MINER_LIST_IP =  Ip address of serverlist.py
-DATABASE_MINER_LIST_PORT = port number of serverlist.py
+* DATABASE_MINER_LIST_IP =  Ip address of serverlist.py
+* DATABASE_MINER_LIST_PORT = port number of serverlist.py
 
-MASTER = True -> Determine whether this code is a master or a serve.
-SERVE = False
+* MASTER = True -> Determine whether this code is a master or a serve.
+* SERVE = False
 
 #### serverlist.py
 ```
@@ -159,22 +159,22 @@ DATABASE_USER = "root"
 DATABASE_PW = "root"
 DATABASE_TABLE = "SERVERLIST"
 ```
-PORT_NUMBER = The port number where this code(transactionPool.py) exists.
-DATABASE_NAME = Name of database for serverlist(aws)
-DATABASE_IP = Ip address of database for serverlist(aws)
-DATABASE_PORT = Port number of database for serverlist(aws)
-DATABASE_USER = mysql user name of database for serverlist(aws)
-DATABASE_PW = mysql password of database for serverlist(aws)
-DATABASE_TABLE = Table name of database for serverlist(aws)
+* PORT_NUMBER = The port number where this code(transactionPool.py) exists.
+* DATABASE_NAME = Name of database for serverlist(aws)
+* DATABASE_IP = Ip address of database for serverlist(aws)
+* DATABASE_PORT = Port number of database for serverlist(aws)
+* DATABASE_USER = mysql user name of database for serverlist(aws)
+* DATABASE_PW = mysql password of database for serverlist(aws)
+* DATABASE_TABLE = Table name of database for serverlist(aws)
 
 ## Test case with Postman
 ### For each running code, you can request the following url(Except internal url request) :
 #### transactionPool.py
-Method GET :
-http://ipAddressOfCode:portNumberOfCode/getTxData/all
-Method POST :
-http://ipAddressOfCode:portNumberOfCode/txData/new
-  body :
+* Method GET :
+  http://ipAddressOfCode:portNumberOfCode/getTxData/all
+* Method POST :
+  http://ipAddressOfCode:portNumberOfCode/txData/new
+  * body :
   ```
   [
       {
@@ -186,8 +186,8 @@ http://ipAddressOfCode:portNumberOfCode/txData/new
   ]
   ```
 #### myBlockchain.py
-Method GET :
-http://ipAddressOfCode:portNumberOfCode/block/getBlockData
-http://ipAddressOfCode:portNumberOfCode/block/generateBlock
-http://ipAddressOfCode:portNumberOfCode/node/addNode
-http://ipAddressOfCode:portNumberOfCode/node/getNode
+* Method GET :
+  http://ipAddressOfCode:portNumberOfCode/block/getBlockData
+  http://ipAddressOfCode:portNumberOfCode/block/generateBlock
+  http://ipAddressOfCode:portNumberOfCode/node/addNode
+  http://ipAddressOfCode:portNumberOfCode/node/getNode
