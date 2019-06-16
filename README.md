@@ -3,7 +3,7 @@
 Writer: JaeWon Park, KyungHyun Kim, SinWoo Lee, YeEun Jeong, SeulKi Kwon, SeongRim Kim
 
 ## Reference Material
-[![KO doc](https://img.shields.io/badge/document-ppt(Korean)-blue.svg)](http://bitly.kr/RYDFTN)
+[![KO doc](https://img.shields.io/badge/document-ppt(Korean)-blue.svg)](https://blog.naver.com/jye5943/221563523373)
 
 ## Introduction
 ***
@@ -65,7 +65,7 @@ Last, It is off limits using csv file in the master's code. The transaction data
   1) Uses EC2 virtual machines in aws (Amazon Web Service).
   2) Select ubuntu Server 16.04 LTS to create an instance.
   3) Connect with putty and install mysql 5.7.
-  4) Modify LISTEN IP bandwidth and port number:
+  4) Modify LISTEN IP bandwidth and port number :  
    ```
    ~$sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
    ```
