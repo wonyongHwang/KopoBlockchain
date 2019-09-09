@@ -808,9 +808,9 @@ class myHandler(BaseHTTPRequestHandler):
                 tempDict = json.loads(receivedData)  # load your str into a list
                 print(tempDict)
                 res = compareMerge(tempDict)
-                if res == -1: # internal error
+                if res == -2: # internal error
                     tempDict.append("internal server error")
-                elif res == -2 : # block chain info incorrect
+                elif res == -1 : # block chain info incorrect
                     tempDict.append("block chain info incorrect")
                 elif res == 1: #normal
                     tempDict.append("accepted")
