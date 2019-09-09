@@ -539,7 +539,7 @@ def compareMerge(bcDict):
     except:
         print("file open error in compareMerge or No database exists")
         print("call initSvr if this server has just installed")
-        return -1
+        return -2
 
     #if it fails to read block data  from db(csv)
     if len(heldBlock) == 0 :
