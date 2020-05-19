@@ -19,6 +19,7 @@ import requests # for sending new block to other nodes
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 # test
 # test2
+# test3 
 # for Put Lock objects into variables(lock)
 lock = Lock()
 
