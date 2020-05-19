@@ -18,6 +18,7 @@ import requests # for sending new block to other nodes
 # 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 # test
+# test2
 # for Put Lock objects into variables(lock)
 lock = Lock()
 
