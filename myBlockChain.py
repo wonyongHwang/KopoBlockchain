@@ -66,6 +66,18 @@ def calculateHash(index, previousHash, timestamp, data, proof):
     sha = hashlib.sha256(value.encode('utf-8'))
     return str(sha.hexdigest())
 
+###MakGoon redesign to use merkleroot
+def calculateHashtwo(index, previousHash):
+    value = str(index) + str(previousHash)
+    sha = hashlib.sha256(value.encode('utf-8'))
+    return str(sha.hexdigest())
+###MakGoon redesign to use merkleroot
+def calculateHashone(index):
+    value = str(index)
+    sha = hashlib.sha256(value.encode('utf-8'))
+    return str(sha.hexdigest())
+
+
 def calculateHashForBlock(block):
     return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.proof)
 
@@ -256,17 +268,42 @@ def readTx(txFilePath):
     except:
         return []
 
+
+# MakGoon redesign to use merkleroot
 def getTxData():
-    strTxData = ''
+    strTxData = []
+    checker = 1
     importedTx = readTx(g_txFileName)
+    tempthashList = []
     if len(importedTx) > 0 :
         for i in importedTx:
             print(i.__dict__)
             transaction = "["+ i.uuid + "]" "UserID " + i.sender + " sent " + i.amount + " bitTokens to UserID " + i.receiver + ". " #
             print(transaction)
-            strTxData += transaction
+            strTxData.append(transaction)
 
-    return strTxData
+    if (len(strTxData) > 0):
+
+        while (checker == 1):
+
+            if (len(strTxData) > 1):
+                a, b = random.sample(strTxData, 2)
+                temptHash = calculateHashtwo(a, b)
+                strTxData.remove(a)
+                strTxData.remove(b)
+                tempthashList.append(temptHash)
+
+            elif (len(strTxData) == 1):
+                c = strTxData[-1]
+                tempHash = calculateHashone(c)
+                strTxData.remove(c)
+                tempthashList.append(temptHash)
+                strTxData = tempthashList
+
+                if (len(strTxData) == 1):
+                    checker = 0
+                    return strTxData
+
 
 def mineNewBlock(difficulty=g_difficulty, blockchainPath=g_bcFileName):
     blockchain = readBlockchain(blockchainPath)
