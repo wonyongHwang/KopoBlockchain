@@ -49,11 +49,11 @@ class Block:
 
 class txData:
 
-    def __init__(self, commitYN, sender, amount, receiver, uuid):
+    def __init__(self, commitYN, listner, music, copywriter, uuid):
         self.commitYN = commitYN
-        self.sender = sender
-        self.amount = amount
-        self.receiver = receiver
+        self.listner = listner
+        self.music = music
+        self.copywriter = copywriter
         self.uuid =  uuid
 
 def generateGenesisBlock():
@@ -281,12 +281,14 @@ def getTxData():
     if len(importedTx) > 0 :
         for i in importedTx:
             print(i.__dict__)
-            transaction = "["+ i.uuid + "]" "UserID " + i.sender + " sent " + i.amount + " bitTokens to UserID " + i.receiver + ". " #
+            transaction = "["+ i.uuid + "]" "Listner" + i.sender + " sent " + i.amount + " museCoins to copywriter " + i.receiver + ". " #
             print(transaction)
             strTxData.append(transaction)
 
     if (len(strTxData) > 0):
-
+# else 문 추가 해야됨
+# 1,2,3,4,5,6 일 때 7,8 이 5,6이 되야됨. 4의 배수
+# default 8건.
         while (checker == 1):
 
             if (len(strTxData) > 1):
@@ -372,7 +374,7 @@ def newtx(txToMining):
     newtxData = []
     # transform given data to txData object
     for line in txToMining:
-        tx = txData(0, line['sender'], line['amount'], line['receiver'], uuid.uuid4())
+        tx = txData(0, line['listner'], line['music'], line['copywriter'], uuid.uuid4())
         newtxData.append(tx)
 
     # limitation check : max 5 tx
