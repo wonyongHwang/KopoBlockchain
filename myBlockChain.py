@@ -14,7 +14,7 @@ import uuid
 from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
-##uaaaaaaaaaaaaaaaaaaaa
+
 # 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 # test
