@@ -9,12 +9,6 @@ class UpdataAndVaildate():
                 for line in blockReader:
                     block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                     heldBlock.append(block)
-                    #if blockReader.line_num == 1:
-                    #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
-                    #    heldBlock.append(block)
-                    #elif blockReader.line_num == last_line_number:
-                    #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
-                    #    heldBlock.append(block)
 
         except:
             print("file open error in compareMerge or No database exists")
@@ -41,9 +35,13 @@ class UpdataAndVaildate():
                 tempBlocks.append(bcToValidateForBlock[i])
             else:
                 return -1
+                #리턴값 확인, -1은 genesisblock관련인데 현재 오류는 그오류가 아닌거같음
 
     def checkGenesisBlock(bcDict):
-
+        ####
+        ####
+        ####
+        #982줄의 출력결과를 합쳐보기
         # compare the given data with genesisBlock
         if not isSameBlock(bcToValidateForBlock[0], heldBlock[0]):
             print('Genesis Block Incorrect')
@@ -59,6 +57,8 @@ class UpdataAndVaildate():
                 return 2
             # select longest chain
             elif len(bcToValidateForBlock) > len(heldBlock):
+                ##kjy bcto 기준으로 나눠보기
+
                 # validation
                 if isSameBlock(heldBlock[0],bcToValidateForBlock[0]) == False:
                         print("Block Information Incorrect #1")
