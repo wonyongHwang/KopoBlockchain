@@ -18,7 +18,7 @@ import requests # for sending new block to other nodes
 # 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 
-
+# 2020.05.21 05:37
 # for Put Lock objects into variables(lock)
 lock = Lock()
 
@@ -663,14 +663,18 @@ def compareMerge(bcDict):
                 print("Block Information Incorrect #1")
                 return -1
         # [START] save it to csv
-        blockchainList = []
-        for block in bcToValidateForBlock:
-            blockList = [block.index, block.previousHash, str(block.timestamp), block.data, block.currentHash, block.proof]
-            blockchainList.append(blockList)
-        with open(g_bcFileName, "w", newline='') as file:
+        newBlock = []  # 내 블록과 외부블록 비교해서 새로운 블록만 담을 리스트 선언
+        lenNewBlocklen = len(bcToValidateForBlock) - len(heldBlock)  # 외부블록 길이에서 내 블록 길이를 뺀다
+        for i in range(1, lenNewBlocklen + 1):  # 새로운 블록 길이만큼 for문 실행
+            newBlock.append(bcToValidateForBlock[-i])
+            newBlock.reverse()
+        with open(g_bcFileName, "a", newline='') as file:  # append 모드로 blockchain.csv 파일 실행
             writer = csv.writer(file)
-            writer.writerows(blockchainList)
+            for i in range(0, len(newBlock)):
+                writer.writerow(newBlock[i])
         # [END] save it to csv
+        return 1
+        # todo 마지막 하나만 추가해서 작성해도 되는데 외부에서 받은 블록을 다 추가해서 작성한다.
         return 1
 
 def initSvr():
