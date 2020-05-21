@@ -18,7 +18,6 @@ import requests # for sending new block to other nodes
 # 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 
-# 2020.05.21 05:37
 # for Put Lock objects into variables(lock)
 lock = Lock()
 
@@ -30,8 +29,11 @@ g_receiveNewBlock = "/node/receiveNewBlock"
 g_difficulty = 2
 g_maximumTry = 100
 g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
+# KHJ 블록에는 메타데이터만을 남기고 tx데이터와 같이 덩어리가 큰 데이터는 별도의 중앙 서버로 두는 하이브리드 방식이 바람직
+# KHJ 머클루트 계산의 룰은 정하기 나름이다. 반드시 짝수로 맞춰서 올릴 필요는 없다.
 
 
+# KHJ 파라미터로 merkleRoot 추가 시 영향성 분석 요
 class Block:
 
     def __init__(self, index, previousHash, timestamp, data, currentHash, proof ):
@@ -45,14 +47,33 @@ class Block:
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
+<<<<<<< Updated upstream
+# KHJ
+=======
+# class txData:
+#
+#     def __init__(self, commitYN, sender, amount, receiver, uuid):
+#         self.commitYN = commitYN
+#         self.sender = sender
+#         self.amount = amount
+#         self.receiver = receiver
+#         self.uuid =  uuid
+
+>>>>>>> Stashed changes
 class txData:
 
-    def __init__(self, commitYN, listner, music, copywriter, uuid):
+    def __init__(self, commitYN, listener, music, copyrightHolder, uuid):
         self.commitYN = commitYN
-        self.listner = listner
+        self.listener = listener
         self.music = music
-        self.copywriter = copywriter
+        self.copyrightHolder = copyrightHolder
         self.uuid =  uuid
+
+# KHJ 난이도 조정은 1주일에 1번씩
+# def adjustDifficulty():
+#     importedBlockchain = readBlockchain(g_bcFileName)
+#     timeDifferential = lastBlock.timestamp - firstBlock.timestamp
+
 
 def generateGenesisBlock():
     print("generateGenesisBlock is called")
@@ -67,18 +88,21 @@ def calculateHash(index, previousHash, timestamp, data, proof):
     sha = hashlib.sha256(value.encode('utf-8'))
     return str(sha.hexdigest())
 
-###MakGoon redesign to use merkleroot
-def calculateHashtwo(index, previousHash):
-    value = str(index) + str(previousHash)
-    sha = hashlib.sha256(value.encode('utf-8'))
-    return str(sha.hexdigest())
-###MakGoon redesign to use merkleroot
-def calculateHashone(index):
-    value = str(index)
-    sha = hashlib.sha256(value.encode('utf-8'))
-    return str(sha.hexdigest())
+<<<<<<< Updated upstream
+# ###MakGoon redesign to use merkleroot
+# def calculateHashtwo(index, previousHash):
+#     value = str(index) + str(previousHash)
+#     sha = hashlib.sha256(value.encode('utf-8'))
+#     return str(sha.hexdigest())
+# ###MakGoon redesign to use merkleroot
+# def calculateHashone(index):
+#     value = str(index)
+#     sha = hashlib.sha256(value.encode('utf-8'))
+#     return str(sha.hexdigest())
 
 
+=======
+>>>>>>> Stashed changes
 def calculateHashForBlock(block):
     return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.proof)
 
@@ -208,12 +232,14 @@ def updateTx(blockData) :
 # Reason for time.sleep ():
 # prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
 # Removed temp files to reduce memory usage and increase work efficiency.
+
+# KHJ
 def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
     txOriginalList = []
     for txDatum in txRawData:
-        txList = [txDatum.commitYN, txDatum.sender, txDatum.amount, txDatum.receiver, txDatum.uuid]
+        txList = [txDatum.commitYN, txDatum.listener, txDatum.music, txDatum.copyrightHolder, txDatum.uuid]
         txDataList.append(txList)
 
     try:
@@ -253,65 +279,142 @@ def writeTx(txRawData):
     return 1
     print('txData written to txData.csv.')
 
+# KHJ
 def readTx(txFilePath):
-    print("readTx")
     importedTx = []
 
     try:
-        with open(txFilePath, 'r',  newline='') as file:
+        with open(txFilePath, 'r', newline='') as file:
             txReader = csv.reader(file)
             for row in txReader:
+<<<<<<< Updated upstream
                 if row[0] == '0': # find unmined txData
-                    line = txData(row[0],row[1],row[2],row[3],row[4])
-                    importedTx.append(line)
+                    importedTx.append(row) # txData객체 리스트로 반환 하던 것을 이중 리스토로 반환하도록 수정
         print("Pulling txData from csv...")
+=======
+                if row[0] == '0':  # find unmined txData
+                    importedTx.append(row) # txData 객체로 구성된 리스트로 반환하던 것을 이중 리스트로 반환하도록 수정함
+>>>>>>> Stashed changes
         return importedTx
     except:
         return []
 
-
-# MakGoon redesign to use merkleroot
+<<<<<<< Updated upstream
+# KHJ : getTxData를 calculateMerkleRoot로 대체할 필요성
+=======
+# KHJ readTx에서 tx객체 리스트로 반환되던 것이 이중 리스트로 반환되므로 getTxData도 수정 요
+>>>>>>> Stashed changes
 def getTxData():
-    strTxData = []
-    checker = 1
+    strTxData = ''
     importedTx = readTx(g_txFileName)
-    tempthashList = []
     if len(importedTx) > 0 :
         for i in importedTx:
+<<<<<<< Updated upstream
+            # print(i.__dict__)
+            transaction = "[uuid: " + i[4] + "]" + i[1] + " played " + i[2] + ". " + "copyrightHolder is " + i[3] + ". "
+            # transaction = "["+ i.uuid + "]" "UserID " + i.listener + " sent " + i.music + " bitTokens to UserID " + i.copyrightHolder + ". "
+=======
             print(i.__dict__)
-            transaction = "["+ i.uuid + "]" "Listner" + i.sender + " sent " + i.amount + " museCoins to copywriter " + i.receiver + ". " #
+            transaction = "["+ i.uuid + "]" "UserID " + i.sender + " sent " + i.amount + " bitTokens to UserID " + i.receiver + ". " #
+>>>>>>> Stashed changes
             print(transaction)
-            strTxData.append(transaction)
+            strTxData += transaction
 
-    if (len(strTxData) > 0):
-# else 문 추가 해야됨
-# 1,2,3,4,5,6 일 때 7,8 이 5,6이 되야됨. 4의 배수
-# default 8건.
-        while (checker == 1):
+    return strTxData
 
-            if (len(strTxData) > 1):
-                a, b = random.sample(strTxData, 2)
-                temptHash = calculateHashtwo(a, b)
-                strTxData.remove(a)
-                strTxData.remove(b)
-                tempthashList.append(temptHash)
+# KHJ
+def hashTx():
+<<<<<<< Updated upstream
+    importedTx = readTx(g_txFileName)   #importedTx = [tx1객체, tx2객체, ...]
+=======
+    importedTx = readTx(g_txFileName)
+>>>>>>> Stashed changes
+    hashedTxList = []
+    for eachTx in importedTx:
+        value = str(eachTx[0]) + str(eachTx[1]) + str(eachTx[2]) + str(eachTx[3]) + str(eachTx[4])
+        sha = str(hashlib.sha256(value.encode('utf-8')).hexdigest())
+        hashedTxList.append(sha)
 
-            elif (len(strTxData) == 1):
-                c = strTxData[-1]
-                tempHash = calculateHashone(c)
-                strTxData.remove(c)
-                tempthashList.append(temptHash)
-                strTxData = tempthashList
+    return hashedTxList
 
-                if (len(strTxData) == 1):
-                    checker = 0
-                    return strTxData
+# KHJ
+def calculateMerkleParent(childList): # 파라미터:[해쉬값, 해쉬값, ...]
+    if len(childList) % 2 == 1:
+        childList.append(childList[-1])
+
+    merkleParentList = []
+    for i in range(0, len(childList), 2):
+        parent = childList[i] + childList[i+1]
+        merkleParent = str(hashlib.sha256(parent.encode('utf-8')).hexdigest())
+        merkleParentList.append(merkleParent)
+
+    return merkleParentList
+
+<<<<<<< Updated upstream
+# KHJ. tx 80만 건의 머클루트 계산에 약 0.9초 소요. 해당 csv의 용량은 55MB
+=======
+# KHJ 80만건 해쉬하는 데 0.95초 소요. csv파일의 크기는 약 55MB
+>>>>>>> Stashed changes
+def calculateMerkleRoot():
+    childList = hashTx()
+
+    while len(childList) > 1:
+        childList = calculateMerkleParent(childList)
+<<<<<<< Updated upstream
+
+    parentList = childList # 가독성 높이기 위해 추가
+    return parentList
 
 
+# # MakGoon redesign to use merkleroot
+# def getTxData():
+#     strTxData = []
+#     checker = 1
+#     importedTx = readTx(g_txFileName)
+#     tempthashList = []
+#     if len(importedTx) > 0 :
+#         for i in importedTx:
+#             print(i.__dict__)
+#             transaction = "["+ i.uuid + "]" "Listner" + i.sender + " sent " + i.amount + " museCoins to copywriter " + i.receiver + ". " #
+#             print(transaction)
+#             strTxData.append(transaction)
+#
+#     if (len(strTxData) > 0):
+# # else 문 추가 해야됨
+# # 1,2,3,4,5,6 일 때 7,8 이 5,6이 되야됨. 4의 배수
+# # default 8건.
+#         while (checker == 1):
+#
+#             if (len(strTxData) > 1):
+#                 a, b = random.sample(strTxData, 2)
+#                 temptHash = calculateHashtwo(a, b)
+#                 strTxData.remove(a)
+#                 strTxData.remove(b)
+#                 tempthashList.append(temptHash)
+#
+#             elif (len(strTxData) == 1):
+#                 c = strTxData[-1]
+#                 tempHash = calculateHashone(c)
+#                 strTxData.remove(c)
+#                 tempthashList.append(temptHash)
+#                 strTxData = tempthashList
+#
+#                 if (len(strTxData) == 1):
+#                     checker = 0
+#                     return strTxData
+=======
+>>>>>>> Stashed changes
+
+    parentList = childList # 가독성 높이기 위해 추가
+    return parentList
+
+# KHJ
 def mineNewBlock(difficulty=g_difficulty, blockchainPath=g_bcFileName):
     blockchain = readBlockchain(blockchainPath)
-    strTxData = getTxData()
-    if strTxData == '' :
+    # strTxData = getTxData()
+    merkleRoot = getMerkleRoot()
+    # if strTxData == '' :
+    if merkleRoot == '' :
         print('No TxData Found. Mining aborted')
         return
 
@@ -322,7 +425,8 @@ def mineNewBlock(difficulty=g_difficulty, blockchainPath=g_bcFileName):
     print('Mining a block...')
 
     while not newBlockFound:
-        newBlockAttempt = generateNextBlock(blockchain, strTxData, timestamp, proof)
+        # newBlockAttempt = generateNextBlock(blockchain, strTxData, timestamp, proof)
+        newBlockAttempt = generateNextBlock(blockchain, merkleRoot, timestamp, proof)
         if newBlockAttempt.currentHash[0:difficulty] == '0' * difficulty:
             stopTime = time.time()
             timer = stopTime - timestamp
@@ -337,6 +441,7 @@ def mineNewBlock(difficulty=g_difficulty, blockchainPath=g_bcFileName):
 def mine():
     mineNewBlock()
 
+# KHJ 블록의 파라미터에서 머클루트를 추가하고 txData를 제거하는지 여부에 따라 검증 로직이 변함
 def isSameBlock(block1, block2):
     if str(block1.index) != str(block2.index):
         return False
@@ -367,18 +472,43 @@ def isValidNewBlock(newBlock, previousBlock):
         return False
     return True
 
+# # makgoon
+# def newtx(txToMining):
+#
+#     newtxData = []
+#     # transform given data to txData object
+#     for line in txToMining:
+#         tx = txData(0, line['listner'], line['music'], line['copywriter'], uuid.uuid4())
+#         newtxData.append(tx)
+#
+#     # limitation check : max 5 tx
+#     if len(newtxData) > 5 :
+#         print('number of requested tx exceeds limitation')
+#         return -1
+#
+#     if writeTx(newtxData) == 0:
+#         print("file write error on txData")
+#         return -2
+#     return 1
+
+# KHJ 리미트 해제로 인한 영향성 분석 요
 def newtx(txToMining):
 
     newtxData = []
     # transform given data to txData object
     for line in txToMining:
-        tx = txData(0, line['listner'], line['music'], line['copywriter'], uuid.uuid4())
+<<<<<<< Updated upstream
+        tx = txData(0, line['listener'], line['music'], line['copyrightHolder'], uuid.uuid4())
+=======
+        tx = txData(0, line['sender'], line['amount'], line['receiver'], uuid.uuid4())
+>>>>>>> Stashed changes
         newtxData.append(tx)
 
     # limitation check : max 5 tx
-    if len(newtxData) > 5 :
-        print('number of requested tx exceeds limitation')
-        return -1
+    # 리미트 해제
+    # if len(newtxData) > 5 :
+    #     print('number of requested tx exceeds limitation')
+    #     return -1
 
     if writeTx(newtxData) == 0:
         print("file write error on txData")
@@ -504,6 +634,7 @@ def readNodes(filePath):
     except:
         return []
 
+# KHJ 블록의 파라미터에서 머클루트를 추가하고 txData를 제거하는지 여부에 따라 검증 로직이 변함
 def broadcastNewBlock(blockchain):
     #newBlock  = getLatestBlock(blockchain) # get the latest block
     importedNodes = readNodes(g_nodelstFileName) # get server node ip and port
@@ -556,6 +687,7 @@ def row_count(filename):
     except:
         return 0
 
+# KHJ
 def compareMerge(bcDict):
 
     heldBlock = []
@@ -663,18 +795,14 @@ def compareMerge(bcDict):
                 print("Block Information Incorrect #1")
                 return -1
         # [START] save it to csv
-        newBlock = []  # 내 블록과 외부블록 비교해서 새로운 블록만 담을 리스트 선언
-        lenNewBlocklen = len(bcToValidateForBlock) - len(heldBlock)  # 외부블록 길이에서 내 블록 길이를 뺀다
-        for i in range(1, lenNewBlocklen + 1):  # 새로운 블록 길이만큼 for문 실행
-            newBlock.append(bcToValidateForBlock[-i])
-            newBlock.reverse()
-        with open(g_bcFileName, "a", newline='') as file:  # append 모드로 blockchain.csv 파일 실행
+        blockchainList = []
+        for block in bcToValidateForBlock:
+            blockList = [block.index, block.previousHash, str(block.timestamp), block.data, block.currentHash, block.proof]
+            blockchainList.append(blockList)
+        with open(g_bcFileName, "w", newline='') as file:
             writer = csv.writer(file)
-            for i in range(0, len(newBlock)):
-                writer.writerow(newBlock[i])
+            writer.writerows(blockchainList)
         # [END] save it to csv
-        return 1
-        # todo 마지막 하나만 추가해서 작성해도 되는데 외부에서 받은 블록을 다 추가해서 작성한다.
         return 1
 
 def initSvr():
