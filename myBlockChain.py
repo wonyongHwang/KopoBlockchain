@@ -844,11 +844,11 @@ class myHandler(BaseHTTPRequestHandler):
                 print(tempDict)
                 res = compareMerge(tempDict)
                 if res == -2:  # internal error
-                    tempDict.append("internal server error")
+                    tempDict.append("internal error")
                 elif res == -1:  # block chain info incorrect
                     tempDict.append("block chain info incorrect")
                 elif res == 1:  # normal
-                    tempDict.append("accepted")
+                    tempDict.append("block chain is updated")
                 elif res == 2:  # identical
                     tempDict.append("already updated")
                 elif res == 3:  # we have a longer chain
