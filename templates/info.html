@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <meta charset="utf-8">
+    <title>info</title>
+  </head>
+  <body>
+    <a href="/main">메인으로</a><br><br>
+    <input type="button" id="class_blockchain" value="class Blockchain">
+    <input type="button" id="addblock" value="addBlock">
+    <input type="button" id="getlatestblock" value="getLatestBlock">
+    <input type="button" id="generategenesisblock" value="generateGenesisBlock">
+    <input type="button" id="readblockchain" value="readBlockchain">
+    <input type="button" id="tojson_b" value="toJSON">
+    <input type="button" id="writeblockchain" value="writeBlockchain">
+    <input type="button" id="checkbalance" value="CheckBalance"><br>
+
+    <input type="button" id="class_tx" value="class txDataList">
+    <input type="button" id="addtxdata" value="addTxData">
+    <input type="button" id="writetx" value="writeTx"><br>
+
+    <input type="button" id="class_node" value="class NodeLst">
+    <input type="button" id="addnode" value="addNode">
+    <input type="button" id="writenodes" value="writeNodes">
+    <input type="button" id="readnodes" value="readNodes">
+    <input type="button" id="tojson_t" value="toJSON"><br>
+
+    <input type="button" id="signtx" value="signTx">
+    <input type="button" id="calculatehash" value="calculateHash">
+    <input type="button" id="gettxdata" value="getTxData">
+    <input type="button" id="mine" value="mine">
+    <input type="button" id="minenewblock" value="mineNewBlock">
+    <input type="button" id="newtx" value="newtx">
+    <input type="button" id="validatetx" value="validateTx"><br><br>
+    <!-- <img src="/info/image01" alt="My Image"> -->
+    <span id="img_area"></span> <br><br>
+    <span id="txt_area"></span> <br>
+  </body>
+  <script>
+    $("#class_blockchain").click(function(){
+      $("#img_area").html('<img src="/info/image?i=c1" alt="My Image" style="max-width: 60%; height: auto;">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"c1"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#addblock").click(function(){
+      $("#img_area").html('<img src="/info/image?i=b1" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"b1"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#getlatestblock").click(function(){
+      $("#img_area").html('<img src="/info/image?i=b2" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"b2"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#generategenesisblock").click(function(){
+      $("#img_area").html('<img src="/info/image?i=b3" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"b3"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#readblockchain").click(function(){
+      $("#img_area").html('<img src="/info/image?i=b4" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"b4"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#tojson_b").click(function(){
+      $("#img_area").html('<img src="/info/image?i=b5" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"b5"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#writeblockchain").click(function(){
+      $("#img_area").html('<img src="/info/image?i=b6" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"b6"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#checkbalance").click(function(){
+      $("#img_area").html('<img src="/info/image?i=b7" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"b7"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#class_tx").click(function(){
+      $("#img_area").html('<img src="/info/image?i=c2" alt="My Image" style="max-width: 60%; height: auto;">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"c2"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#addtxdata").click(function(){
+      $("#img_area").html('<img src="/info/image?i=t1" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"t1"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#writetx").click(function(){
+      $("#img_area").html('<img src="/info/image?i=t2" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"t2"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#class_node").click(function(){
+      $("#img_area").html('<img src="/info/image?i=c3" alt="My Image" style="max-width: 60%; height: auto;">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"c3"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#addnode").click(function(){
+      $("#img_area").html('<img src="/info/image?i=n1" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"n1"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#writenodes").click(function(){
+      $("#img_area").html('<img src="/info/image?i=n2" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"n2"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#readnodes").click(function(){
+      $("#img_area").html('<img src="/info/image?i=n3" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"n3"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#tojson_t").click(function(){
+      $("#img_area").html('<img src="/info/image?i=n4" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"n4"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#signtx").click(function(){
+      $("#img_area").html('<img src="/info/image?i=a1" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"a1"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#calculatehash").click(function(){
+      $("#img_area").html('<img src="/info/image?i=a2" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"a2"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#gettxdata").click(function(){
+      $("#img_area").html('<img src="/info/image?i=a3" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"a3"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#mine").click(function(){
+      $("#img_area").html('<img src="/info/image?i=a4" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"a4"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#minenewblock").click(function(){
+      $("#img_area").html('<img src="/info/image?i=a5" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"a5"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#newtx").click(function(){
+      $("#img_area").html('<img src="/info/image?i=a6" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"a6"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+    $("#validatetx").click(function(){
+      $("#img_area").html('<img src="/info/image?i=a7" alt="My Image">')
+      $.ajax({
+        url:"/info/text",
+        dataType:"text",
+        type:'GET',
+        data:{
+          "i":"a7"
+        },
+        success:function(response){
+          $("#txt_area").html(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+
+
+  </script>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <meta charset="utf-8">
+    <title>blockchain 4조</title>
+    <style>
+      .blockchain {margin:20px; table-layout:fixed;}
+      .blockchain .c1 {width:auto;}
+      .blockchain .c2 {width:150px;}
+      .blockchain .c3 {width:150px;}
+      .blockchain .c4 {width:150px;}
+      .blockchain .c5 {width:auto;}
+      .blockchain .c6 {width:auto;}
+      .blockchain th,
+      .blockchain td {padding:10px; line-height:1.5; border:2px solid black; }
+    </style>
+  </head>
+  <body>
+    보내는 사람의 개인키 입력 <br>
+    <textarea id="private_key_sender" placeholder="개인키" rows="13" cols="65"></textarea>
+    <input type="button" id="prvKeygenBtn" value="개인키 랜덤생성"> <br>
+    <br><br>
+    받는 사람의 공개키 입력<br>
+    <textarea id="public_key_receiver" placeholder="공개키" rows="4" cols="65"></textarea>
+    <input type="button" id="pubKeygenBtn" value="공개키 랜덤생성"> <br>
+    <br><br>
+    <input type="number" id="amount" placeholder="보낼 금액" style="width:485px">보낼 금액<br>
+    <input type="number" id="fee" placeholder="수수료" style="width:485px">수수료<br><br>
+    uuid : <span id="span_uuid"></span><br>
+    <textarea id="signature" placeholder="사인" rows="5" cols="65"></textarea>
+    <input type="button" id="signBtn" value="사인">
+    <input type="button" id="validateBtn" value="사인 검증">
+    <a href="/info/">함수 정보 보러가기</a><br>
+
+
+    <input type="button" id="generateBlockBtn" value="generateBlock">
+    <input type="button" id="newTxBtn" value="newTx">
+    <input type="button" id="checkBalanceBtn" value="잔액 확인">
+    <br><br>
+    <input type="number" id="index_from" placeholder="from">
+    <input type="number" id="index_to" placeholder="to">
+    <input type="button" id="getBlockDataBtn" value="getBlockData"><br>
+    <span id = "output_area"></span>
+
+  </body>
+  <script>
+  console.log(location.href)
+
+
+
+    $("#signBtn").click(function(){
+
+      $.ajax({
+        url:"/sign",
+        dataType:"json",
+        type:'POST',
+        data:{
+            "sender":$("#private_key_sender").val(),
+		        "receiver":$("#public_key_receiver").val(),
+	          "amount":$("#amount").val(),
+            "fee":$("#fee").val()
+        },
+        success:function(response){
+          console.log(response)
+          $("#signature").val(response.signature)
+          $("#span_uuid").html(response.uuid)
+          $("#output_area").html(response.msg)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+
+    })
+
+
+    $("#validateBtn").click(function(){
+
+      $.ajax({
+        url:"/validateSign",
+        dataType:"json",
+        type:'POST',
+        data:{
+            "sender":$("#private_key_sender").val(),
+		        "receiver":$("#public_key_receiver").val(),
+	          "amount":$("#amount").val(),
+            "fee":$("#fee").val(),
+            "uuid":$("#span_uuid").html(),
+            "signature":$("#signature").val()
+        },
+        success:function(response){
+          $("#output_area").html(response.validity)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+
+    })
+
+
+
+
+    $("#getBlockDataBtn").click(function(){
+      var from_index = $("#index_from").val()
+      var to_index = $("#index_to").val()
+
+      if(!$.isNumeric(from_index)){
+        if(from_index=="" && to_index==""){
+          from_index = 0
+          to_index=-2
+        } else{
+          $("#output_area").html("from_index is not a number")
+          return
+        }
+      } else if(!$.isNumeric(to_index)){
+        if(from_index=="" && to_index==""){
+          from_index = 0
+          to_index=-2
+        } else{
+          $("#output_area").html("to_index is not a number")
+          return
+        }
+      } else if(Number(to_index) < 0 ){
+        $("#output_area").html("to_index can not be lower than 0")
+        return
+      } else if(Number(from_index) < 0 ){
+        $("#output_area").html("from_index can not be lower than 0")
+        return
+      } else if(Number(from_index) > Number(to_index)){
+        $("#output_area").html("to_index can not be lower than from_index")
+        return
+      }
+
+      $.ajax({
+        url:"/block/getBlockData",
+        dataType:"json",
+        type:'GET',
+        data:{
+          "from":Number(from_index),
+          "to":Number(to_index)+1
+        },
+        success:function(response){
+          console.log(response)
+          $("#output_area").html(" ")
+          if(response=="Database Connection Failed"){
+            $("#output_area").html(response)
+          } else {
+          var str = "<table class='blockchain'><colgroup><col class='c1'><col class='c2'><col class='c3'><col class='c4'><col class='c5'><col class='c6'></colgroup>"
+          str += "<thead><tr><th>index</th><th>previous hash</th><th>current hash</th><th>timestamp</th><th>proof</th><th>transaction data</th></tr></thead><tbody>"
+
+          for(var i=0; i<response.length; i++){
+            str += "<tr>"
+            str += "<td>" + response[i].index + "</td>"
+            str += "<td style='word-break:break-all'>" + response[i].previous_hash + "</td>"
+            str += "<td style='word-break:break-all'>" + response[i].current_hash + "</td>"
+            str += "<td>" + response[i].time_stamp + "</td>"
+            str += "<td>" + response[i].proof + "</td>"
+            str += "<td style='word-break:break-all'>" + response[i].tx_data + "</td></tr>"
+          }
+          str += "</tbody></table>"
+          $("#output_area").append(str)
+          }
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+
+    })
+
+    $("#newTxBtn").click(function(){
+
+      $.ajax({
+        url:"/block/newtx",
+        dataType:"json",
+        type:'POST',
+        // headers:{'Content-type':'application/json'},
+        data:{
+            "sender":$("#private_key_sender").val(),
+		        "receiver":$("#public_key_receiver").val(),
+	          "amount":$("#amount").val(),
+            "fee":$("#fee").val(),
+            "uuid":$("#span_uuid").html(),
+            "signature":$("#signature").val()
+        },
+        // beforeSend:function(xhr){
+        //   xhr.setRequestHeader("Content-Type","application/json");
+        // },
+        success:function(response){
+          console.log(response)
+          $("#output_area").html(response.msg)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+
+    $("#checkBalanceBtn").click(function(){
+
+      $.ajax({
+        url:"/checkBalance",
+        dataType:"json",
+        type:'POST',
+        data:{
+          "sender":$("#private_key_sender").val()
+        },
+        success:function(response){
+          console.log(response)
+          $("#output_area").html(response.msg)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+
+
+    $("#generateBlockBtn").click(function(){
+
+      $.ajax({
+        url:"/block/generateBlock",
+        dataType:"json",
+        type:'POST',
+        data:{
+          "miner":$("#private_key_sender").val()
+        },
+        success:function(response){
+          console.log(response)
+          $("#output_area").html(response.msg)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+
+
+    $("#prvKeygenBtn").click(function(){
+      $.ajax({
+        url:"/getPrivateKey",
+        dataType:"text",
+        type:'GET',
+        success:function(response){
+          console.log(response)
+          $("#private_key_sender").val(response)
+          alert("개인키는 반드시 복사해서 잘 보관해주세요.")
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+
+    $("#pubKeygenBtn").click(function(){
+
+      $.ajax({
+        url:"/getPublicKey",
+        dataType:"text",
+        type:'GET',
+        success:function(response){
+          console.log(response)
+          $("#public_key_receiver").val(response)
+        },
+        error:function(response, axd, axs){
+          console.log(axd)
+        }
+      })
+    })
+
+
+
+
+  </script>
+</html>
