@@ -613,7 +613,7 @@ def compareMerge(bcDict):
     except:
         print("file open error in compareMerge or No database exists")
         print("call initSvr if this server has just installed")
-        return -1
+        return -2
 
     for line in bcDict:
         block = Block(line['index'], line['previousHash'], line['timestamp'], line['merkleRoot'], line['currentHash'], line['proof'])
@@ -621,16 +621,16 @@ def compareMerge(bcDict):
 
     if not isSameBlock(bcToValidateForBlock[0], heldBlock[0]):
         print('Genesis Block Incorrect')
-        return -2
+        return -1
 
     if len(heldBlock) == len(bcToValidateForBlock):
         for i in range(1, len(heldBlock)):
             if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
                 print("Each Block dose not match")
-                return -2
+                return -1
             elif isValidNewBlock(bcToValidateForBlock[i], bcToValidateForBlock[i - 1]) == False:
                 print("Block Chain info incorrected")
-                return -2
+                return -1
 
         print('Block Chain is already updated')
         return 2
@@ -639,11 +639,11 @@ def compareMerge(bcDict):
         for i in range(0, len(heldBlock)):
             if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
                 print("Each Block dose not match")
-                return -2
+                return -1
         for i in range(1, len(bcToValidateForBlock)):
             if isValidNewBlock(bcToValidateForBlock[i], bcToValidateForBlock[i - 1]) == False:
                 print("Block Chain info incorrected")
-                return -2
+                return -1
 
         newBlock = []
         lenNewBlocklen = len(bcToValidateForBlock) - len(heldBlock)
