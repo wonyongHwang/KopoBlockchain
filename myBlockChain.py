@@ -45,6 +45,27 @@ class Node(Enum):
     ip = 0
     port = 1
 
+# 테이블 생성 쿼리
+def createtable(engine):
+    try :
+        engine.execute("CREATE TABLE db_blockchain (index varchar(100),\
+                                    previoushash varchar(100),\
+                                    timestamp varchar(100),\
+                                    data varchar(100),\
+                                    currenthash varchar(100),\
+                                    proof varchar(100));")
+        engine.execute("CREATE TABLE db_txdata (commityn integer,\
+                                    sender varchar(100),\
+                                    amount varchar(100),\
+                                    receiver varchar(100),\
+                                    uuid_str varchar(100));")
+        engine.execute("CREATE TABLE db_node (ip varchar(100),\
+                                    port varchar(100),\
+                                    failnum varchar(100));")
+        return "success create table"
+
+    except :
+        return "already have table"
 
 def toJSON(self):
     return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
@@ -606,7 +627,16 @@ class myHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         data = []  # response json data
 
-        if None != re.search('/block/*', self.path):
+        # 테이블 생성
+        if None != re.search('/create/*', self.path):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            data.append(createtable(engine1))
+            self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+        # print(re.search('/block/*', self.path))
+
+        elif None != re.search('/block/*', self.path):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
