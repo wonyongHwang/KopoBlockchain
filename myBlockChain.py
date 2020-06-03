@@ -14,7 +14,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 from enum import Enum
 
-database = 'postgresql://postgres:postgres@127.0.0.1:812/postgres'
+
+database = 'postgresql://postgres:postgres@127.0.0.1:5432/postgres'
 engine1 = create_engine(database)
 
 PORT_NUMBER = 8666
@@ -378,7 +379,7 @@ def addNode(queryStr):
     # save
     previousList = []
     nodeList = []
-    nodeList.append([queryStr[Node.ip.value], queryStr[Node.ip.value], 0])  # ip, port, # of connection fail
+    nodeList.append([queryStr[Node.ip.value], queryStr[Node.port.value], 0])  # ip, port, # of connection fail
 
     try:
         get_df_nodeData = pd.read_sql("select * from {}".format(g_nodeDatabaseName), con=engine1)
