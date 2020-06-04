@@ -15,7 +15,7 @@ from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# 20200604 /(GyuIn Park,JiWeon Lim,SungHoon Oh,Sol Han)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 
 # for Put Lock objects into variables(lock)
@@ -30,6 +30,7 @@ g_difficulty = 2
 g_maximumTry = 100
 g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
 
+# 개선 3. 외부에서 받은 블록 필요한 만큼만 끊어서 받기 & 구조 변경
 
 class Block:
 
@@ -81,12 +82,6 @@ def generateNextBlock(blockchain, blockData, timestamp, proof):
     return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash,proof)
 
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* WriteBlockchain function Update */
-# If the 'blockchain.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
 def writeBlockchain(blockchain):
 
     blockchainList = []
@@ -133,9 +128,9 @@ def writeBlockchain(blockchain):
                     broadcastNewBlock(blockchain)
                     lock.release()
             except:
-                    time.sleep(3)
-                    print("writeBlockchain file open error")
-                    lock.release()
+                time.sleep(3)
+                print("writeBlockchain file open error")
+                lock.release()
         else:
             print("Blockchain is empty")
 
@@ -188,13 +183,7 @@ def updateTx(blockData) :
     tempfile.close()
     print('txData updated')
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* writeTx function Update */
-# If the 'txData.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
@@ -391,13 +380,7 @@ def isValidChain(bcToValidate):
 
     return True
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* addNode function Update */
-# If the 'nodeList.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def addNode(queryStr):
     # save
     previousList = []
@@ -516,33 +499,34 @@ def row_count(filename):
     except:
         return 0
 
+# 개선 3. 외부에서 받은 블록 필요한 만큼만 끊어서 받기 & 구조 변경
 def compareMerge(bcDict):
-
-    heldBlock = []
-    bcToValidateForBlock = []
+    heldBlock = []  # 내 노드에 있는 블록 객체들의 리스트
+    bcToValidateForBlock = []  # 받을 노드에 있는 블록 객체들의 리스트
 
     # Read GenesisBlock
     try:
-        with open(g_bcFileName, 'r',  newline='') as file:
+        with open(g_bcFileName, 'r', newline='') as file:
             blockReader = csv.reader(file)
-            #last_line_number = row_count(g_bcFileName)
+            # last_line_number = row_count(g_bcFileName)
             for line in blockReader:
                 block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                 heldBlock.append(block)
-                #if blockReader.line_num == 1:
+                # if blockReader.line_num == 1:
                 #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                 #    heldBlock.append(block)
-                #elif blockReader.line_num == last_line_number:
+                # elif blockReader.line_num == last_line_number:
                 #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
                 #    heldBlock.append(block)
 
+    # blockchain.csv 파일을 열지 못한 경우
     except:
         print("file open error in compareMerge or No database exists")
         print("call initSvr if this server has just installed")
         return -2
 
-    #if it fails to read block data  from db(csv)
-    if len(heldBlock) == 0 :
+    # if it fails to read block data  from db(csv)
+    if len(heldBlock) == 0:
         print("fail to read")
         return -2
 
@@ -550,7 +534,8 @@ def compareMerge(bcDict):
     for line in bcDict:
         # print(type(line))
         # index, previousHash, timestamp, data, currentHash, proof
-        block = Block(line['index'], line['previousHash'], line['timestamp'], line['data'], line['currentHash'], line['proof'])
+        block = Block(line['index'], line['previousHash'], line['timestamp'], line['data'], line['currentHash'],
+                      line['proof'])
         bcToValidateForBlock.append(block)
 
     # compare the given data with genesisBlock
@@ -559,79 +544,68 @@ def compareMerge(bcDict):
         return -1
 
     # check if broadcasted new block,1 ahead than > last held block
+    # if isValidNewBlock(bcToValidateForBlock[-1], heldBlock[-1]) == False:
 
-    if isValidNewBlock(bcToValidateForBlock[-1],heldBlock[-1]) == False:
-
-        # latest block == broadcasted last block
-        if isSameBlock(heldBlock[-1], bcToValidateForBlock[-1]) == True:
-            print('latest block == broadcasted last block, already updated')
-            return 2
-        # select longest chain
-        elif len(bcToValidateForBlock) > len(heldBlock):
-            # validation
-            if isSameBlock(heldBlock[0],bcToValidateForBlock[0]) == False:
-                    print("Block Information Incorrect #1")
-                    return -1
-            tempBlocks = [bcToValidateForBlock[0]]
-            for i in range(1, len(bcToValidateForBlock)):
-                if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
-                    tempBlocks.append(bcToValidateForBlock[i])
-                else:
-                    return -1
-            # [START] save it to csv
-            blockchainList = []
-            for block in bcToValidateForBlock:
-                blockList = [block.index, block.previousHash, str(block.timestamp), block.data,
-                             block.currentHash, block.proof]
-                blockchainList.append(blockList)
-            with open(g_bcFileName, "w", newline='') as file:
-                writer = csv.writer(file)
-                writer.writerows(blockchainList)
-            # [END] save it to csv
-            return 1
-        elif len(bcToValidateForBlock) < len(heldBlock):
-            # validation
-            #for i in range(0,len(bcToValidateForBlock)):
-            #    if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
-            #        print("Block Information Incorrect #1")
-            #        return -1
-            tempBlocks = [bcToValidateForBlock[0]]
-            for i in range(1, len(bcToValidateForBlock)):
-                if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
-                    tempBlocks.append(bcToValidateForBlock[i])
-                else:
-                    return -1
-            print("We have a longer chain")
-            return 3
-        else:
-            print("Block Information Incorrect #2")
-            return -1
-    else: # very normal case (ex> we have index 100 and receive index 101 ...)
+    # select longest chain
+    if len(bcToValidateForBlock) > len(heldBlock):
+        # validation
+        # 개선: 위에서 이미 검사한 항목 (제거)
+        # if isSameBlock(heldBlock[0],bcToValidateForBlock[0]) == False:
+        #         print("Block Information Incorrect #1")
+        #         return -1
         tempBlocks = [bcToValidateForBlock[0]]
         for i in range(1, len(bcToValidateForBlock)):
             if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
                 tempBlocks.append(bcToValidateForBlock[i])
             else:
-                print("Block Information Incorrect #2 "+tempBlocks.__dict__)
                 return -1
 
-        print("new block good")
-
+        # 개선: 블록 일치 검사 추가
         # validation
         for i in range(0, len(heldBlock)):
             if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
                 print("Block Information Incorrect #1")
                 return -1
+
         # [START] save it to csv
+        # 개선3. 외부에서 받은 블록 중 하나만 받아도 되는데 전체 다 받음
+        # 블록객체를 다 사용하지 않고 tempBlocks[-(len(bcToValidateForBlock) - len(heldBlock)) : ]만큼만 사용하여
+        # "w"모드 대신 "a"모드로 기존 csv 파일에 더해줌
+
+        # isValidNewBlock(bcToValidateForBlock[-1],heldBlock[-1]) == True인 very normal case에서도 혼용 가능
+        # => if isValidNewBlock(bcToValidateForBlock[-1],heldBlock[-1]) == False: 조건 굳이 필요 없을 듯
+
         blockchainList = []
-        for block in bcToValidateForBlock:
-            blockList = [block.index, block.previousHash, str(block.timestamp), block.data, block.currentHash, block.proof]
-            blockchainList.append(blockList)
-        with open(g_bcFileName, "w", newline='') as file:
+        lengthGap = len(bcToValidateForBlock) - len(heldBlock)   # 받을 블록과 내 블록의 길이 차이
+        for block in bcToValidateForBlock[-lengthGap:]:
+            blockList = [block.index, block.previousHash, str(block.timestamp), block.data,
+                         block.currentHash, block.proof]
+            blockchainList.append(blockList)  # blockchainList에 타노드의 block을 list 형태로 담아줌
+        with open(g_bcFileName, "a", newline='') as file:
             writer = csv.writer(file)
             writer.writerows(blockchainList)
+
         # [END] save it to csv
         return 1
+
+    elif len(bcToValidateForBlock) <= len(heldBlock):
+        # validation
+        # for i in range(0,len(bcToValidateForBlock)):
+        #    if isSameBlock(heldBlock[i], bcToValidateForBlock[i]) == False:
+        #        print("Block Information Incorrect #1")
+        #        return -1
+        #  개선: 받지 않을 블록에 대한 유효성 검사를 굳이 진행하며 리소스를 낭비할 필요 없음 (삭제)
+        # tempBlocks = [bcToValidateForBlock[0]]
+        # for i in range(1, len(bcToValidateForBlock)):
+        #     if isValidNewBlock(bcToValidateForBlock[i], tempBlocks[i - 1]):
+        #         tempBlocks.append(bcToValidateForBlock[i])
+        #     else:
+        #         return -1
+        print("we have a longer or identical chain, already updated")
+        return 2
+    else:
+        print("Block Information Incorrect #2")
+        return -1
 
 def initSvr():
     print("init Server")
@@ -699,12 +673,12 @@ class myHandler(BaseHTTPRequestHandler):
                 # TODO: range return (~/block/getBlockData?from=1&to=300)
                 # queryString = urlparse(self.path).query.split('&')
 
-                block = readBlockchain(g_bcFileName, mode = 'external')
+                block = readBlockchain(g_bcFileName, mode='external')
 
-                if block == None :
+                if block == None:
                     print("No Block Exists")
                     data.append("no data exists")
-                else :
+                else:
                     for i in block:
                         print(i.__dict__)
                         data.append(i.__dict__)
