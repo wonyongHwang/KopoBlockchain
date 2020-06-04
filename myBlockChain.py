@@ -1,12 +1,10 @@
 import hashlib
 import time
 import csv
-import random
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 import json
 import re
-from urllib.parse import parse_qs
 from urllib.parse import urlparse
 import threading
 import cgi
@@ -15,7 +13,7 @@ from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# 20200604 /(GyuIn Park,JiWeon Lim,SungHoon Oh,Sol Han)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 
 # for Put Lock objects into variables(lock)
@@ -30,16 +28,18 @@ g_difficulty = 2
 g_maximumTry = 100
 g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
 
+# 개선 5. 블록헤더에 merkleRoot 추가
+
 
 class Block:
-
-    def __init__(self, index, previousHash, timestamp, data, currentHash, proof ):
+    def __init__(self, index, previousHash, timestamp, data, currentHash, proof , merkleRoot):
         self.index = index
         self.previousHash = previousHash
         self.timestamp = timestamp
         self.data = data
         self.currentHash = currentHash
         self.proof = proof
+        self.merkleRoot = merkleRoot
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
@@ -57,43 +57,37 @@ def generateGenesisBlock():
     print("generateGenesisBlock is called")
     timestamp = time.time()
     print("time.time() => %f \n" % timestamp)
-    tempHash = calculateHash(0, '0', timestamp, "Genesis Block", 0)
+    tempHash = calculateHash(0, '0', timestamp, "Genesis Block", 0, 0)
     print(tempHash)
-    return Block(0, '0', timestamp, "Genesis Block",  tempHash,0)
+    return Block(0, '0', timestamp, "Genesis Block",  tempHash, 0, 0)
 
-def calculateHash(index, previousHash, timestamp, data, proof):
-    value = str(index) + str(previousHash) + str(timestamp) + str(data) + str(proof)
+def calculateHash(index, previousHash, timestamp, data, proof, merkleRoot):
+    value = str(index) + str(previousHash) + str(timestamp) + str(data) + str(proof) + str(merkleRoot)
     sha = hashlib.sha256(value.encode('utf-8'))
     return str(sha.hexdigest())
 
 def calculateHashForBlock(block):
-    return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.proof)
+    return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.proof, block.merkleRoot)
 
 def getLatestBlock(blockchain):
     return blockchain[len(blockchain) - 1]
 
-def generateNextBlock(blockchain, blockData, timestamp, proof):
+def generateNextBlock(blockchain, blockData, timestamp, proof, MerkleData):
     previousBlock = getLatestBlock(blockchain)
     nextIndex = int(previousBlock.index) + 1
     nextTimestamp = timestamp
-    nextHash = calculateHash(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, proof)
+    nextHash = calculateHash(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, proof, MerkleData)
     # index, previousHash, timestamp, data, currentHash, proof
-    return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash,proof)
+    return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash, proof, MerkleData)
 
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* WriteBlockchain function Update */
-# If the 'blockchain.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
 def writeBlockchain(blockchain):
-
+    # blockchain: genesisBlock or newBlock
     blockchainList = []
 
     for block in blockchain:
 
-        blockList = [block.index, block.previousHash, str(block.timestamp), block.data, block.currentHash,block.proof ]
+        blockList = [block.index, block.previousHash, str(block.timestamp), block.data, block.currentHash,block.proof , block.merkleRoot]
         blockchainList.append(blockList)
 
     #[STARAT] check current db(csv) if broadcasted block data has already been updated
@@ -103,7 +97,7 @@ def writeBlockchain(blockchain):
             last_line_number = row_count(g_bcFileName)
             for line in blockReader:
                 if blockReader.line_num == last_line_number:
-                    lastBlock = Block(line[0], line[1], line[2], line[3], line[4], line[5])
+                    lastBlock = Block(line[0], line[1], line[2], line[3], line[4], line[5], line[6])
 
         if int(lastBlock.index) + 1 != int(blockchainList[-1][0]):
             print("index sequence mismatch")
@@ -133,11 +127,12 @@ def writeBlockchain(blockchain):
                     broadcastNewBlock(blockchain)
                     lock.release()
             except:
-                    time.sleep(3)
-                    print("writeBlockchain file open error")
-                    lock.release()
+                time.sleep(3)
+                print("writeBlockchain file open error")
+                lock.release()
         else:
             print("Blockchain is empty")
+
 
 def readBlockchain(blockchainFilePath, mode = 'internal'):
     print("readBlockchain")
@@ -147,7 +142,7 @@ def readBlockchain(blockchainFilePath, mode = 'internal'):
         with open(blockchainFilePath, 'r',  newline='') as file:
             blockReader = csv.reader(file)
             for line in blockReader:
-                block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
+                block = Block(line[0], line[1], line[2], line[3], line[4], line[5], line[6])
                 importedBlockchain.append(block)
 
         print("Pulling blockchain from csv...")
@@ -167,6 +162,7 @@ def updateTx(blockData) :
 
     phrase = re.compile(r"\w+[-]\w+[-]\w+[-]\w+[-]\w+") # [6b3b3c1e-858d-4e3b-b012-8faac98b49a8]UserID hwang sent 333 bitTokens to UserID kim.
     matchList = phrase.findall(blockData.data)
+    # print(matchList)
 
     if len(matchList) == 0 :
         print ("No Match Found! " + str(blockData.data) + "block idx: " + str(blockData.index))
@@ -188,13 +184,7 @@ def updateTx(blockData) :
     tempfile.close()
     print('txData updated')
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* writeTx function Update */
-# If the 'txData.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
@@ -220,7 +210,6 @@ def writeTx(txRawData):
                         writer.writerows(txOriginalList)
                         writer.writerows(txDataList)
                         print("writeTx write ok")
-                        csvfile.close()
                         openWriteTx = True
                         lock.release()
 
@@ -240,6 +229,56 @@ def writeTx(txRawData):
     return 1
     print('txData written to txData.csv.')
 
+# 개선 5. 머클루트 해시 계산을 txdata를 string 형태로 바꿔 list에 담아주는 함수
+def readMK(txFilePath):
+    print("readMerkle")
+    importedMK = []
+
+    try:
+        with open(txFilePath, 'r',  newline='') as file:
+            txReader = csv.reader(file)
+            for row in txReader:
+                if row[0] == '0': # find unmined txData
+                    line = row[1] + row[2] + row[3] + row[4]   # merkleRoot를 만들어 주기위해 tx객체대신 str이 요소인 importTx 리스트로 바꿔줌
+                    importedMK.append(line)
+        print("Pulling txData from csv...")
+        return importedMK
+    except:
+        return []
+
+# 개선 5. transaction을 두개씩 묶어서 hash 처리와 16진수 변환 처리를 해줌
+def culculateMerkle(tx1, tx2):
+    hashTx = hashlib.sha256((tx1 + tx2).encode('utf-8')).hexdigest()
+    return hashTx
+
+# 개선 5. 최종 머클루트 값을 반환해주는 함수
+# transaction을 두개씩 묶어서 hash해준 결과가 하나로 합쳐질 때까지 재귀적으로 작동되는 함수
+def getMerkleCycle(importedTx):
+    txCount = len(importedTx) # transaction의 갯수
+    newHashList = []          # hash 처리할 transaction의 리스트
+
+    if txCount == 0:
+        return None
+
+    if len(importedTx) == 1:
+        tempHash = culculateMerkle(importedTx[-1], importedTx[-1])
+        return tempHash
+
+    # 홀수의 경우를 고려하여 마지막 transaction은 뺀 채로 쌍을 지어 hash 처리
+    for i in range(0, txCount - 1, 2):
+        newHashList.append(culculateMerkle(importedTx[i], importedTx[i + 1]))
+    # 홀수일 경우, 마지막 transaction을 복제하여 hash 처리
+    if txCount % 2 == 1:  # odd, hash last item twice
+        newHashList.append(culculateMerkle(importedTx[-1], importedTx[-1]))
+    # 해시값이 하나가 될 때까지 재귀적으로 getmerkle 함수를 실행
+    return getMerkleCycle(newHashList)
+
+# 개선 5. 최종 머클루트 값을 소환하는 함수
+def getMerkle():
+    importedMK = readMK(g_txFileName)
+    merkleData = getMerkleCycle(importedMK)
+    return merkleData
+
 def readTx(txFilePath):
     print("readTx")
     importedTx = []
@@ -256,13 +295,14 @@ def readTx(txFilePath):
     except:
         return []
 
+# 개선 5. updatetx에 쓰이는 uuid만 제외하고 블록에 들어갈 transaction 정보를 삭제해줌
 def getTxData():
     strTxData = ''
     importedTx = readTx(g_txFileName)
     if len(importedTx) > 0 :
         for i in importedTx:
             print(i.__dict__)
-            transaction = "["+ i.uuid + "]" "UserID " + i.sender + " sent " + i.amount + " bitTokens to UserID " + i.receiver + ". " #
+            transaction = "["+ i.uuid + "] . "
             print(transaction)
             strTxData += transaction
 
@@ -270,11 +310,13 @@ def getTxData():
 
 def mineNewBlock(difficulty=g_difficulty, blockchainPath=g_bcFileName):
     blockchain = readBlockchain(blockchainPath)
+
     strTxData = getTxData()
     if strTxData == '' :
         print('No TxData Found. Mining aborted')
         return
 
+    merkleData = getMerkle()
     timestamp = time.time()
     proof = 0
     newBlockFound = False
@@ -282,7 +324,7 @@ def mineNewBlock(difficulty=g_difficulty, blockchainPath=g_bcFileName):
     print('Mining a block...')
 
     while not newBlockFound:
-        newBlockAttempt = generateNextBlock(blockchain, strTxData, timestamp, proof)
+        newBlockAttempt = generateNextBlock(blockchain, strTxData, timestamp, proof, merkleData)
         if newBlockAttempt.currentHash[0:difficulty] == '0' * difficulty:
             stopTime = time.time()
             timer = stopTime - timestamp
@@ -309,6 +351,8 @@ def isSameBlock(block1, block2):
     elif str(block1.currentHash) != str(block2.currentHash):
         return False
     elif str(block1.proof) != str(block2.proof):
+        return False
+    elif str(block1.merkleRoot) != str(block2.merkleRoot):
         return False
     return True
 
@@ -354,7 +398,7 @@ def isValidChain(bcToValidate):
         with open(g_bcFileName, 'r',  newline='') as file:
             blockReader = csv.reader(file)
             for line in blockReader:
-                block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
+                block = Block(line[0], line[1], line[2], line[3], line[4], line[5], line[6])
                 genesisBlock.append(block)
 #                break
     except:
@@ -365,7 +409,8 @@ def isValidChain(bcToValidate):
     for line in bcToValidate:
         # print(type(line))
         # index, previousHash, timestamp, data, currentHash, proof
-        block = Block(line['index'], line['previousHash'], line['timestamp'], line['data'], line['currentHash'], line['proof'])
+        block = Block(line['index'], line['previousHash'], line['timestamp'], line['data'], line['currentHash'],
+                      line['proof'], line['merkleRoot'])
         bcToValidateForBlock.append(block)
 
     #if it fails to read block data  from db(csv)
@@ -391,13 +436,7 @@ def isValidChain(bcToValidate):
 
     return True
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* addNode function Update */
-# If the 'nodeList.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def addNode(queryStr):
     # save
     previousList = []
@@ -527,7 +566,7 @@ def compareMerge(bcDict):
             blockReader = csv.reader(file)
             #last_line_number = row_count(g_bcFileName)
             for line in blockReader:
-                block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
+                block = Block(line[0], line[1], line[2], line[3], line[4], line[5], line[6])
                 heldBlock.append(block)
                 #if blockReader.line_num == 1:
                 #    block = Block(line[0], line[1], line[2], line[3], line[4], line[5])
@@ -669,7 +708,7 @@ def initSvr():
                 for line in tmpbcData:
                     # print(type(line))
                     # index, previousHash, timestamp, data, currentHash, proof
-                    block = [line['index'], line['previousHash'], line['timestamp'], line['data'],line['currentHash'], line['proof']]
+                    block = [line['index'], line['previousHash'], line['timestamp'], line['data'],line['currentHash'], line['proof'], line['merkleRoot']]
                     blockchainList.append(block)
                 try:
                     with open(g_bcFileName, "w", newline='') as file:
@@ -699,12 +738,12 @@ class myHandler(BaseHTTPRequestHandler):
                 # TODO: range return (~/block/getBlockData?from=1&to=300)
                 # queryString = urlparse(self.path).query.split('&')
 
-                block = readBlockchain(g_bcFileName, mode = 'external')
+                block = readBlockchain(g_bcFileName, mode='external')
 
-                if block == None :
+                if block == None:
                     print("No Block Exists")
                     data.append("no data exists")
-                else :
+                else:
                     for i in block:
                         print(i.__dict__)
                         data.append(i.__dict__)
@@ -814,10 +853,8 @@ class myHandler(BaseHTTPRequestHandler):
                     tempDict.append("block chain info incorrect")
                 elif res == 1: #normal
                     tempDict.append("accepted")
-                elif res == 2: # identical
-                    tempDict.append("already updated")
-                elif res == 3: # we have a longer chain
-                    tempDict.append("we have a longer chain")
+                elif res == 2: # we have a longer or identical chain
+                    tempDict.append("we have a longer or identical chain")
                 self.wfile.write(bytes(json.dumps(tempDict), "utf-8"))
         else:
             self.send_response(404)
