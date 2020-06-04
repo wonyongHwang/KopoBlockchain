@@ -15,8 +15,10 @@ from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# 20200604 /(GyuIn Park,JiWeon Lim,SungHoon Oh,Sol Han)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
+
+
 
 # for Put Lock objects into variables(lock)
 lock = Lock()
@@ -30,6 +32,7 @@ g_difficulty = 2
 g_maximumTry = 100
 g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
 
+# 개선 1. getBlockData 끊어서 불러오기
 
 class Block:
 
@@ -81,12 +84,7 @@ def generateNextBlock(blockchain, blockData, timestamp, proof):
     return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash,proof)
 
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* WriteBlockchain function Update */
-# If the 'blockchain.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
+
 def writeBlockchain(blockchain):
 
     blockchainList = []
@@ -188,13 +186,7 @@ def updateTx(blockData) :
     tempfile.close()
     print('txData updated')
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* writeTx function Update */
-# If the 'txData.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
@@ -391,13 +383,7 @@ def isValidChain(bcToValidate):
 
     return True
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* addNode function Update */
-# If the 'nodeList.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def addNode(queryStr):
     # save
     previousList = []
@@ -691,63 +677,108 @@ class myHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         data = []  # response json data
         if None != re.search('/block/*', self.path):
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-
             if None != re.search('/block/getBlockData', self.path):
-                # TODO: range return (~/block/getBlockData?from=1&to=300)
-                # queryString = urlparse(self.path).query.split('&')
+                # 개선 2(개선완료). TODO: range return (~/block/getBlockData?from=1&to=300) / 함수구현
+                queryString = urlparse(self.path).query.split('&')
+                startPoint = int(queryString[0].split('=')[1]) - 1
+                endPoint = int(queryString[1].split('=')[1])
 
-                block = readBlockchain(g_bcFileName, mode = 'external')
+                try:
+                    block = readBlockchain(g_bcFileName, mode = 'external')
 
-                if block == None :
-                    print("No Block Exists")
-                    data.append("no data exists")
-                else :
-                    for i in block:
-                        print(i.__dict__)
-                        data.append(i.__dict__)
-
-                self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+                except:
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    data.append("error")
+                else:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    if block == None :
+                        print("No Block Exists")
+                        data.append("no data exists")
+                    else:
+                        for i in range(startPoint, endPoint):
+                            print(block[i].__dict__)
+                            data.append(block[i].__dict__)
+                finally:
+                    self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
 
             elif None != re.search('/block/generateBlock', self.path):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
                 t = threading.Thread(target=mine)
                 t.start()
                 data.append("{mining is underway:check later by calling /block/getBlockData}")
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
             else:
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
                 data.append("{info:no such api}")
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
 
         elif None != re.search('/node/*', self.path):
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
+
             if None != re.search('/node/addNode', self.path):
                 queryStr = urlparse(self.path).query.split(':')
                 print("client ip : "+self.client_address[0]+" query ip : "+queryStr[0])
                 if self.client_address[0] != queryStr[0]:
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
                     data.append("your ip address doesn't match with the requested parameter")
                 else:
-                    res = addNode(queryStr)
-                    if res == 1:
-                        importedNodes = readNodes(g_nodelstFileName)
-                        data =importedNodes
-                        print("node added okay")
-                    elif res == 0 :
-                        data.append("caught exception while saving")
-                    elif res == -1 :
-                        importedNodes = readNodes(g_nodelstFileName)
-                        data = importedNodes
-                        data.append("requested node is already exists")
-                self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+                    try:
+                        res = addNode(queryStr)
+                    except:
+                        pass
+                    finally:
+                        if res == 1:
+                            self.send_response(200)
+                            self.send_header('Content-type', 'application/json')
+                            self.end_headers()
+                            importedNodes = readNodes(g_nodelstFileName)
+                            data =importedNodes
+                            print("node added okay")
+                        elif res == 0 :
+                            self.send_response(500)
+                            self.send_header('Content-type', 'application/json')
+                            self.end_headers()
+                            data.append("caught exception while saving")
+                        elif res == -1 :
+                            self.send_response(500)
+                            self.send_header('Content-type', 'application/json')
+                            self.end_headers()
+                            importedNodes = readNodes(g_nodelstFileName)
+                            data = importedNodes
+                            data.append("requested node is already exists")
+                        self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
             elif None != re.search('/node/getNode', self.path):
-                importedNodes = readNodes(g_nodelstFileName)
-                data = importedNodes
-                self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+                try:
+                    importedNodes = readNodes(g_nodelstFileName)
+                    data = importedNodes
+                except:
+                    data.append("error")
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                else:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                finally:
+                    self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+
+            else:
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+
         else:
-            self.send_response(403)
+            self.send_response(404)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
         # ref : https://mafayyaz.wordpress.com/2013/02/08/writing-simple-http-server-in-python-with-rest-and-json/
