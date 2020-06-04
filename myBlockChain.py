@@ -15,7 +15,7 @@ from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# 20200604 /(GyuIn Park,JiWeon Lim,SungHoon Oh,Sol Han)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 
 # for Put Lock objects into variables(lock)
@@ -30,6 +30,7 @@ g_difficulty = 2
 g_maximumTry = 100
 g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
 
+# 개선 2. while문 탈출조건 추가
 
 class Block:
 
@@ -81,12 +82,6 @@ def generateNextBlock(blockchain, blockData, timestamp, proof):
     return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash,proof)
 
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* WriteBlockchain function Update */
-# If the 'blockchain.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
 def writeBlockchain(blockchain):
 
     blockchainList = []
@@ -115,11 +110,15 @@ def writeBlockchain(blockchain):
         pass
         #return
     # [END] check current db(csv)
+    # 개선 2. 파일이 열리지 않으면 while문 계속 돈다. 다른 탈출 조건도 필요
+    # 개선 방안: 탈출 조건 추가 - tryCnt >= 10 | openFile == True | emptyFile == True
     openFile = False
-    while not openFile:
+    emptyFile = False  # blockchainList != []
+    tryCnt = 0  # 파일 여는 시도 횟수
+
+    while ((not openFile) & (tryCnt < 10) & (not emptyFile)):
         if blockchainList != []:
             try:
-                lock.acquire()
                 with open(g_bcFileName, "w", newline='') as file:
                     writer = csv.writer(file)
                     writer.writerows(blockchainList)
@@ -128,16 +127,21 @@ def writeBlockchain(blockchain):
                     openFile = True
                     for block in blockchain:
                         updateTx(block)
-                    print('Blockchain written to blockchain.csv.')
-                    print('Broadcasting new block to other nodes')
-                    broadcastNewBlock(blockchain)
-                    lock.release()
+                print('Blockchain written to blockchain.csv.')
+                print('Broadcasting new block to other nodes')
+                broadcastNewBlock(blockchain)
+                lock.release()
             except:
-                    time.sleep(3)
-                    print("writeBlockchain file open error")
-                    lock.release()
+                time.sleep(3)
+                # 파일 여는 시도 횟수가 10번이 넘으면 print문 찍어주고 while문 탈출
+                tryCnt += 1
+                if tryCnt == 10:
+                    print("Error: a limit for attempts to open a file / Fail to genesisNewBlock")
+                lock.release()
         else:
+            # blockchainList == []: file에 write해줄 필요 없음 / 에러 사유 찍어주고 emptyFile = True로 바로 탈출
             print("Blockchain is empty")
+            emptyFile = True
 
 def readBlockchain(blockchainFilePath, mode = 'internal'):
     print("readBlockchain")
@@ -188,13 +192,7 @@ def updateTx(blockData) :
     tempfile.close()
     print('txData updated')
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* writeTx function Update */
-# If the 'txData.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
@@ -391,13 +389,7 @@ def isValidChain(bcToValidate):
 
     return True
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* addNode function Update */
-# If the 'nodeList.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def addNode(queryStr):
     # save
     previousList = []
@@ -699,12 +691,12 @@ class myHandler(BaseHTTPRequestHandler):
                 # TODO: range return (~/block/getBlockData?from=1&to=300)
                 # queryString = urlparse(self.path).query.split('&')
 
-                block = readBlockchain(g_bcFileName, mode = 'external')
+                block = readBlockchain(g_bcFileName, mode='external')
 
-                if block == None :
+                if block == None:
                     print("No Block Exists")
                     data.append("no data exists")
-                else :
+                else:
                     for i in block:
                         print(i.__dict__)
                         data.append(i.__dict__)
