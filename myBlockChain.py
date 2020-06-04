@@ -15,7 +15,7 @@ from tempfile import NamedTemporaryFile
 import shutil
 import requests # for sending new block to other nodes
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
+# 20200604 /(GyuIn Park,JiWeon Lim,SungHoon Oh,Sol Han)
 from multiprocessing import Process, Lock # for using Lock method(acquire(), release())
 
 # for Put Lock objects into variables(lock)
@@ -30,6 +30,21 @@ g_difficulty = 2
 g_maximumTry = 100
 g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
 
+# 개선 4. file 열어서 write하는 부분 함수화
+
+# 개선 4 : fileName의 file을 열어서, file에 listName의 list를 써주는 메서드 (file.close 내장함) - 수정사항
+def openfile01(fileName, listName):
+    with open(fileName, "w", newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(listName)
+        file.close()
+
+def openfile02(fileName, listName01, listName02):
+    with open(fileName, "w", newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(listName01)
+        writer.writerows(listName02)
+        file.close()
 
 class Block:
 
@@ -81,12 +96,6 @@ def generateNextBlock(blockchain, blockData, timestamp, proof):
     return Block(nextIndex, previousBlock.currentHash, nextTimestamp, blockData, nextHash,proof)
 
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* WriteBlockchain function Update */
-# If the 'blockchain.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
 def writeBlockchain(blockchain):
 
     blockchainList = []
@@ -133,9 +142,9 @@ def writeBlockchain(blockchain):
                     broadcastNewBlock(blockchain)
                     lock.release()
             except:
-                    time.sleep(3)
-                    print("writeBlockchain file open error")
-                    lock.release()
+                time.sleep(3)
+                print("writeBlockchain file open error")
+                lock.release()
         else:
             print("Blockchain is empty")
 
@@ -188,13 +197,7 @@ def updateTx(blockData) :
     tempfile.close()
     print('txData updated')
 
-# 20190605 /(YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* writeTx function Update */
-# If the 'txData.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
+
 def writeTx(txRawData):
     print(g_txFileName)
     txDataList = []
@@ -214,15 +217,11 @@ def writeTx(txRawData):
                 lock.acquire()
                 try:
                     print("NewTxData lock.acquire")
-                    with open(g_txFileName, 'w', newline='') as csvfile:
-                        writer = csv.writer(csvfile)
-                        # adding new tx
-                        writer.writerows(txOriginalList)
-                        writer.writerows(txDataList)
-                        print("writeTx write ok")
-                        csvfile.close()
-                        openWriteTx = True
-                        lock.release()
+                    openfile02(g_txFileName, txOriginalList, txDataList)    # 개선 4
+                    print("writeTx write ok")
+                    csvfile.close()
+                    openWriteTx = True
+                    lock.release()
 
                 except Exception as e:
                     print(e)
@@ -232,9 +231,7 @@ def writeTx(txRawData):
     except:
         # this is 1st time of creating txFile
         try:
-            with open(g_txFileName, "w", newline='') as file:
-                writer = csv.writer(file)
-                writer.writerows(txDataList)
+            openfile01(g_txFileName, txDataList)   # 개선 4
         except:
             return 0
     return 1
@@ -391,13 +388,6 @@ def isValidChain(bcToValidate):
 
     return True
 
-# 20190605 / (YuRim Kim, HaeRi Kim, JongSun Park, BohKuk Suh , HyeongSeob Lee, JinWoo Song)
-# /* addNode function Update */
-# If the 'nodeList.csv' file is already open, make it inaccessible via lock.acquire()
-# After executing the desired operation, changed to release the lock.(lock.release())
-# Reason for time.sleep ():
-# prevents server overload due to repeated error message output and gives 3 seconds of delay to allow time for other users to wait without opening file while editing and saving csv file.
-# Removed temp files to reduce memory usage and increase work efficiency.
 def addNode(queryStr):
     # save
     previousList = []
@@ -421,15 +411,11 @@ def addNode(queryStr):
             while not openFile3:
                 lock.acquire()
                 try:
-                    with open(g_nodelstFileName, 'w', newline='') as csvfile:
-                        writer = csv.writer(csvfile)
-                        writer.writerows(nodeList)
-                        writer.writerows(previousList)
-                        csvfile.close()
-                        nodeList.clear()
-                        lock.release()
-                        print('new node written to nodelist.csv.')
-                        return 1
+                    openfile02(g_nodelstFileName, nodeList, previousList)    # 개선 4
+                    nodeList.clear()
+                    lock.release()
+                    print('new node written to nodelist.csv.')
+                    return 1
                 except Exception as ex:
                     print(ex)
                     time.sleep(3)
@@ -439,12 +425,10 @@ def addNode(queryStr):
     except:
         # this is 1st time of creating node list
         try:
-            with open(g_nodelstFileName, "w", newline='') as file:
-                writer = csv.writer(file)
-                writer.writerows(nodeList)
-                nodeList.clear()
-                print('new node written to nodelist.csv.')
-                return 1
+            openfile01(g_nodelstFileName, nodeList)    # 개선 4
+            nodeList.clear()
+            print('new node written to nodelist.csv.')
+            return 1
         except Exception as ex:
             print(ex)
             return 0
@@ -672,9 +656,7 @@ def initSvr():
                     block = [line['index'], line['previousHash'], line['timestamp'], line['data'],line['currentHash'], line['proof']]
                     blockchainList.append(block)
                 try:
-                    with open(g_bcFileName, "w", newline='') as file:
-                        writer = csv.writer(file)
-                        writer.writerows(blockchainList)
+                    openfile01(g_bcFileName, blockchainList)    # 개선 4
                 except Exception as e:
                     print("file write error in initSvr() "+e)
 
