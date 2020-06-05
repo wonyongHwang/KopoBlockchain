@@ -28,6 +28,7 @@ g_difficulty = 4
 g_maximumTry = 100
 g_nodeList = {'trustedServerAds': '8666'}  # trusted server list, should be checked manually
 
+
 class Block(Enum):
     index = 0
     previoushash = 1
@@ -47,7 +48,6 @@ class Node(Enum):
     ip = 0
     port = 1
 
-# 테이블 생성 쿼리
 def createtable(engine):
     try :
         engine.execute("CREATE TABLE db_blockchain (index varchar(100),\
