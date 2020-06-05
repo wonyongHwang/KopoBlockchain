@@ -26,9 +26,9 @@ g_txFileName = "txData.csv"
 g_bcFileName = "blockchain.csv"
 g_nodelstFileName = "nodelst.csv"
 g_receiveNewBlock = "/node/receiveNewBlock"
-g_difficulty = 2
+g_difficulty = 5
 g_maximumTry = 100
-g_nodeList = {'trustedServerAddress':'8666'} # trusted server list, should be checked manually
+g_nodeList = {'127.0.0.1':'8668'} # trusted server list, should be checked manually
 
 
 class Block:
@@ -539,7 +539,7 @@ def compareMerge(bcDict):
     except:
         print("file open error in compareMerge or No database exists")
         print("call initSvr if this server has just installed")
-        return -2
+        return -1
 
     #if it fails to read block data  from db(csv)
     if len(heldBlock) == 0 :
@@ -691,65 +691,110 @@ class myHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         data = []  # response json data
         if None != re.search('/block/*', self.path):
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-
             if None != re.search('/block/getBlockData', self.path):
-                # TODO: range return (~/block/getBlockData?from=1&to=300)
-                # queryString = urlparse(self.path).query.split('&')
+               # 20190605 / (kyuin Park, jiweon Lim, sunghoon Oh, sol Han )
+               # TODO : http://localhost:8666/block/getBlockData?from=1&end=10 -> from, end 문자열 검사
+               # 블록체인 갯수와 맞지 않는 경우 예외 처리 (예> 블록이 4개 존재, 요청은 10개)
+               # 블록 요청 from에 음수값, 0값 예외 처리
+                queryString = urlparse(self.path).query.split('&')
+                startPoint = int(queryString[0].split('=')[1]) - 1
+                endPoint = int(queryString[1].split('=')[1])
 
-                block = readBlockchain(g_bcFileName, mode = 'external')
+                try:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
 
-                if block == None :
-                    print("No Block Exists")
-                    data.append("no data exists")
-                else :
-                    for i in block:
-                        print(i.__dict__)
-                        data.append(i.__dict__)
-
-                self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+                    block = readBlockchain(g_bcFileName, mode = 'external')
+                    if block == None:
+                        print("No Block Exists")
+                        data.append("no data exists")
+                    else:
+                        for i in range(startPoint, endPoint):
+                            print(block[i].__dict__)
+                            data.append(block[i].__dict__)
+                except:
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    data.append("error")
+                finally:
+                    self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
 
             elif None != re.search('/block/generateBlock', self.path):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
                 t = threading.Thread(target=mine)
                 t.start()
                 data.append("{mining is underway:check later by calling /block/getBlockData}")
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
             else:
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
                 data.append("{info:no such api}")
                 self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
 
         elif None != re.search('/node/*', self.path):
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
+
             if None != re.search('/node/addNode', self.path):
                 queryStr = urlparse(self.path).query.split(':')
                 print("client ip : "+self.client_address[0]+" query ip : "+queryStr[0])
                 if self.client_address[0] != queryStr[0]:
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
                     data.append("your ip address doesn't match with the requested parameter")
                 else:
-                    res = addNode(queryStr)
-                    if res == 1:
-                        importedNodes = readNodes(g_nodelstFileName)
-                        data =importedNodes
-                        print("node added okay")
-                    elif res == 0 :
-                        data.append("caught exception while saving")
-                    elif res == -1 :
-                        importedNodes = readNodes(g_nodelstFileName)
-                        data = importedNodes
-                        data.append("requested node is already exists")
-                self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+                    try:
+                        res = addNode(queryStr)
+                    except:
+                        pass
+                    finally:
+                        if res == 1:
+                            self.send_response(200)
+                            self.send_header('Content-type', 'application/json')
+                            self.end_headers()
+                            importedNodes = readNodes(g_nodelstFileName)
+                            data =importedNodes
+                            print("node added okay")
+                        elif res == 0 :
+                            self.send_response(500)
+                            self.send_header('Content-type', 'application/json')
+                            self.end_headers()
+                            data.append("caught exception while saving")
+                        elif res == -1 :
+                            self.send_response(500)
+                            self.send_header('Content-type', 'application/json')
+                            self.end_headers()
+                            importedNodes = readNodes(g_nodelstFileName)
+                            data = importedNodes
+                            data.append("requested node is already exists")
+                        self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+
             elif None != re.search('/node/getNode', self.path):
-                importedNodes = readNodes(g_nodelstFileName)
-                data = importedNodes
-                self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+                try:
+                    importedNodes = readNodes(g_nodelstFileName)
+                    data = importedNodes
+                except:
+                    data.append("error")
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                else:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                finally:
+                    self.wfile.write(bytes(json.dumps(data, sort_keys=True, indent=4), "utf-8"))
+
         else:
-            self.send_response(403)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+
+
         # ref : https://mafayyaz.wordpress.com/2013/02/08/writing-simple-http-server-in-python-with-rest-and-json/
 
     def do_POST(self):
@@ -808,9 +853,9 @@ class myHandler(BaseHTTPRequestHandler):
                 tempDict = json.loads(receivedData)  # load your str into a list
                 print(tempDict)
                 res = compareMerge(tempDict)
-                if res == -2: # internal error
+                if res == -1: # internal error
                     tempDict.append("internal server error")
-                elif res == -1 : # block chain info incorrect
+                elif res == -2 : # block chain info incorrect
                     tempDict.append("block chain info incorrect")
                 elif res == 1: #normal
                     tempDict.append("accepted")
