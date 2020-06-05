@@ -578,15 +578,19 @@ def compareMerge(bcDict):
                     tempBlocks.append(bcToValidateForBlock[i])
                 else:
                     return -1
-            # [START] save it to csv
+            # [START] save it to csv 
+            # 20190605 / (kyuin Park, jiweon Lim, sunghoon Oh, sol Han )
+            # TODO: append 정상여부 검증 필요
             blockchainList = []
-            for block in bcToValidateForBlock:
+            lengthGap = len(bcToValidateForBlock) - len(heldBlock)  # 받을 블록과 내 블록의 길이 차이
+            for block in bcToValidateForBlock[-lengthGap:]:
                 blockList = [block.index, block.previousHash, str(block.timestamp), block.data,
                              block.currentHash, block.proof]
-                blockchainList.append(blockList)
-            with open(g_bcFileName, "w", newline='') as file:
+                blockchainList.append(blockList)  # blockchainList에 타노드의 block을 list 형태로 담아줌
+            with open(g_bcFileName, "a", newline='') as file:
                 writer = csv.writer(file)
                 writer.writerows(blockchainList)
+
             # [END] save it to csv
             return 1
         elif len(bcToValidateForBlock) < len(heldBlock):
