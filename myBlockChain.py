@@ -700,9 +700,9 @@ class myHandler(BaseHTTPRequestHandler):
                # TODO : http://localhost:8666/block/getBlockData?from=1&end=10 -> from, end 문자열 검사
                # 블록체인 갯수와 맞지 않는 경우 예외 처리 (예> 블록이 4개 존재, 요청은 10개)
                # 블록 요청 from에 음수값, 0값 예외 처리
-                queryString = urlparse(self.path).query.split('&')
-                startPoint = int(queryString[0].split('=')[1]) - 1
-                endPoint = int(queryString[1].split('=')[1])
+                #queryString = urlparse(self.path).query.split('&')
+                #startPoint = int(queryString[0].split('=')[1]) - 1
+                #endPoint = int(queryString[1].split('=')[1])
 
                 try:
                     self.send_response(200)
@@ -714,7 +714,7 @@ class myHandler(BaseHTTPRequestHandler):
                         print("No Block Exists")
                         data.append("no data exists")
                     else:
-                        for i in range(startPoint, endPoint):
+                        for i in range(0, len(block)): #(startPoint, endPoint):
                             print(block[i].__dict__)
                             data.append(block[i].__dict__)
                 except:
