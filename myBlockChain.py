@@ -464,11 +464,17 @@ def readNodes(filePath):
     except:
         return []
 
+# 20220610 / (HyunJin Jung, EunCheol Lim, JinHwan Lee)
+# /* broadcastNewBlock function Update */
+# number of fails in the nodelst.csv differed from actual number of fails.
+# This results in requesting once more than the limit(=g_maximumTry).
+# Therefore, number of fails should count +1 before comparing with limit.
 def broadcastNewBlock(blockchain):
     #newBlock  = getLatestBlock(blockchain) # get the latest block
     importedNodes = readNodes(g_nodelstFileName) # get server node ip and port
     reqHeader = {'Content-Type': 'application/json; charset=utf-8'}
     reqBody = []
+
     for i in blockchain:
         reqBody.append(i.__dict__)
 
@@ -493,13 +499,14 @@ def broadcastNewBlock(blockchain):
                         for row in reader:
                             if row:
                                 if row[0] == node[0] and row[1] ==node[1]:
-                                    print("connection failed "+row[0]+":"+row[1]+", number of fail "+row[2])
-                                    tmp = row[2]
+                                    row[2] = int(row[2]) + 1    # number of fails should count +1 before comparing with limit.
+                                    print("connection failed "+row[0]+":"+row[1]+", number of fail "+ str(row[2]))
+                                    # tmp = row[2]
                                     # too much fail, delete node
-                                    if int(tmp) > g_maximumTry:
+                                    if row[2] > g_maximumTry:
                                         print(row[0]+":"+row[1]+" deleted from node list because of exceeding the request limit")
                                     else:
-                                        row[2] = int(tmp) + 1
+                                        # row[2] = int(tmp) + 1
                                         writer.writerow(row)
                                 else:
                                     writer.writerow(row)
