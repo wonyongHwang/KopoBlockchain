@@ -32,6 +32,9 @@ curl --location --request GET 'http://localhost:8666/block/getBlockData'
 ```
 
 ## 💡 generateBlock
+You should write tx before generate a new block. if you don't write new tx, mining will be aborted.
+
+You can write new tx here -> [newTx](#-newTx-post)
 
 You can generate a new block by link down below.
 
