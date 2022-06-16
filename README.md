@@ -64,5 +64,14 @@ curl --location --request GET 'http://localhost:8666/block/mineNewBlock'
 
 
 ## 💵 newtx (POST)
-http://localhost:8666/block/newtx
-..
+Use Post Method for this Example request
+
+```
+curl --location --request POST 'http://localhost:8666/block/newtx' \
+--header 'Content-Type: application/json' \
+--data-raw '[{
+    "sender" : "sender_name",
+    "amount" : "number_of_amounts",
+    "receiver" : "receiver_name"
+}]'
+```
