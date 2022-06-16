@@ -2,6 +2,8 @@
 Python Blockchain Implementation for educational purposes (Dept. of Smart Finance of Korea Polytechnics)
 ..
 
+## YOU MUST RUN BLOCKCHIAN SERVER BEFORE FOLLOW THESE INSTRUCTIONS !!!
+
 ## 🚩 Table of Contents
 
 - [getBlockData](#-getBlockData)
