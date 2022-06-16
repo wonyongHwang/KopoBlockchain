@@ -17,7 +17,7 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 ## getBlockData
 
-You can get blockdata by link down below.(GET Method)
+You can get blockdata by link down below. (GET Method)
 
 You must run myBlockChain.py on pyCharm before click this link.
 
