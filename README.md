@@ -4,10 +4,10 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 ## 🚩 Table of Contents
 
-- [getBlockData](#-getBlockData)
+- [getBlockData](#getBlockData)
 
 
-- [newTx](#-newTx)
+- [newTx](#newTx)
 
 
 
