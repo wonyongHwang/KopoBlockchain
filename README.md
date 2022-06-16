@@ -14,7 +14,7 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 - [newTx](#-newTx-post)
 
-- [validateBlock](#-newBlock)
+- [validateBlock](#-validateBlock)
 
 
 
