@@ -4,7 +4,7 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 ### YOU MUST RUN BLOCKCHIAN SERVER BEFORE FOLLOW THESE INSTRUCTIONS BELOW !!!
 
-## 🚩 Table of Contents
+## 📖 Contents
 
 - [getBlockData](#-getBlockData)
 
