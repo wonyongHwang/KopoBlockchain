@@ -16,6 +16,7 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 - [validateBlock](#-validateBlock)
 
+- [Diagrams](#Diagrams)
 
 
 
@@ -106,3 +107,9 @@ curl --location --request POST 'http://localhost:8666/block/validateBlock' \
     }
 ]'
 ```
+# Diagrams
+## Flow chart Image for generateBlock
+![initial](https://github.com/SunghwanNam/KopoBlockchain/blob/283eac7a1299875d4ff556ae97afd2aae0e8186b/generateBlock.png)
+
+## Flow chart Image for getBlockData
+![initial](https://github.com/SunghwanNam/KopoBlockchain/blob/283eac7a1299875d4ff556ae97afd2aae0e8186b/getBlockData.png)
