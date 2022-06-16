@@ -16,3 +16,15 @@ curl --location --request GET 'http://localhost:8666/block/getBlockData'
 ## newtx (POST)
 http://localhost:8666/block/newtx
 ..
+
+## 🚩 Table of Contents
+
+- [how to start getBlockData?](#-how-to-start-getBlockData?)
+
+
+## 🤖 how to start getBlockData?
+
+You can get blockdata by link down below.
+You must run myBlockChain.py on pyCharm before click this link.
+
+http://localhost:8666/block/getBlockData
