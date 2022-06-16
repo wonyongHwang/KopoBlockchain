@@ -84,6 +84,11 @@ curl --location --request POST 'http://localhost:8666/block/newtx' \
 
 
 ## 🔎 validateBlock
+You can check that new block is valid or not.
+
+You have to figure out "currentHash", "data", "index", "previousHash", "proof", "timestamp" before validate new block.
+
+Use POST Method same as newTx before.
 
 ```
 curl --location --request POST 'http://localhost:8666/block/validateBlock' \
