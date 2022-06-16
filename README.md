@@ -15,3 +15,4 @@ curl --location --request GET 'http://localhost:8666/block/getBlockData'
 
 ## newtx (POST)
 http://localhost:8666/block/newtx
+..
