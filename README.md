@@ -22,7 +22,7 @@ You must run myBlockChain.py on pyCharm before click this link.
 
 http://localhost:8666/block/getBlockData
 
-### this is sample request for getBlockData (curl)
+### this is example request for getBlockData (curl)
 ```
 curl --location --request GET 'http://localhost:8666/block/getBlockData'
 ```
