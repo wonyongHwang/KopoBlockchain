@@ -8,6 +8,8 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 - [generateBlock](#generateBlock)
 
+- [newBlock](#newBlock)
+
 - [newTx](#newTx-post)
 
 
@@ -33,7 +35,7 @@ curl --location --request GET 'http://localhost:8666/block/getBlockData'
 
 You can generate a new block by link down below.
 
-it also use GET method to run this function.
+it use GET method to run this function.
 
 http://localhost:8666/block/generateBlock
 
@@ -41,6 +43,20 @@ http://localhost:8666/block/generateBlock
 ```
 curl --location --request GET 'http://localhost:8666/block/generateBlock'
 ```
+
+## newBlock
+
+You can mine a new block by link down below.
+
+it also use GET method to run this function.
+
+http://localhost:8666/block/mineNewBlock
+
+### this is Example Request for newBlock (curl)
+```
+curl --location --request GET 'http://localhost:8666/block/mineNewBlock'
+```
+
 
 ## newtx (POST)
 http://localhost:8666/block/newtx
