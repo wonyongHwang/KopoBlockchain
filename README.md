@@ -72,6 +72,7 @@ You have to fill out Headers and Body before when you send requests.
 
 (Content-Type(KEY) : application/json(VALUE), Body = raw, json)
 
+### This is Example Request for newTx (curl, POST Method)
 ```
 curl --location --request POST 'http://localhost:8666/block/newtx' \
 --header 'Content-Type: application/json' \
@@ -89,6 +90,8 @@ You can check that new block is valid or not.
 You have to figure out "currentHash", "data", "index", "previousHash", "proof", "timestamp" before validate new block.
 
 Use POST Method same as newTx before.
+
+### This is Example Request for validateBlock (curl, POST Method)
 
 ```
 curl --location --request POST 'http://localhost:8666/block/validateBlock' \
