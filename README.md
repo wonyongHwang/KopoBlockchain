@@ -27,6 +27,17 @@ http://localhost:8666/block/getBlockData
 curl --location --request GET 'http://localhost:8666/block/getBlockData'
 ```
 
+## generateBlock
+
+You can generate a new block by link down below.
+it also use GET method to run this function.
+
+http://localhost:8666/block/generateBlock
+
+### this is Example Request for generateBlock (curl)
+```
+http://localhost:8666/block/generateBlock
+```
 
 ## newtx (POST)
 http://localhost:8666/block/newtx
