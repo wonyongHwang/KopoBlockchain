@@ -36,7 +36,7 @@ http://localhost:8666/block/generateBlock
 
 ### this is Example Request for generateBlock (curl)
 ```
-http://localhost:8666/block/generateBlock
+curl --location --request GET 'http://localhost:8666/block/generateBlock'
 ```
 
 ## newtx (POST)
