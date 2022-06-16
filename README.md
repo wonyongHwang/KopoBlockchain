@@ -64,7 +64,7 @@ curl --location --request GET 'http://localhost:8666/block/mineNewBlock'
 
 
 ## 💵 newtx (POST)
-Please use Post Method for this Example request
+Please use Post Method for this Example request. \n
 You have to fill out Headers and Body before when you send requests.
 
 (Content-Type(KEY) : application/json(VALUE), Body = raw, json)
