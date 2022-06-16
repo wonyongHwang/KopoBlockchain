@@ -83,7 +83,7 @@ curl --location --request POST 'http://localhost:8666/block/newtx' \
 ```
 
 
-## validateBlock
+## 🔎 validateBlock
 
 ```
 curl --location --request POST 'http://localhost:8666/block/validateBlock' \
