@@ -18,7 +18,7 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 
 
-## getBlockData
+## 🧱 getBlockData
 
 You can get blockdata by link down below. (GET Method)
 
@@ -31,7 +31,7 @@ http://localhost:8666/block/getBlockData
 curl --location --request GET 'http://localhost:8666/block/getBlockData'
 ```
 
-## generateBlock
+## 💡 generateBlock
 
 You can generate a new block by link down below.
 
@@ -44,7 +44,7 @@ http://localhost:8666/block/generateBlock
 curl --location --request GET 'http://localhost:8666/block/generateBlock'
 ```
 
-## newBlock
+## ⛏ newBlock
 
 You can mine a new block by link down below.
 
@@ -58,6 +58,6 @@ curl --location --request GET 'http://localhost:8666/block/mineNewBlock'
 ```
 
 
-## newtx (POST)
+## 💵 newtx (POST)
 http://localhost:8666/block/newtx
 ..
