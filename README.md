@@ -17,7 +17,8 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 ## getBlockData
 
-You can get blockdata by link down below.
+You can get blockdata by link down below.(GET Method)
+
 You must run myBlockChain.py on pyCharm before click this link.
 
 http://localhost:8666/block/getBlockData
@@ -30,6 +31,7 @@ curl --location --request GET 'http://localhost:8666/block/getBlockData'
 ## generateBlock
 
 You can generate a new block by link down below.
+
 it also use GET method to run this function.
 
 http://localhost:8666/block/generateBlock
