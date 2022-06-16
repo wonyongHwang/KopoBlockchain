@@ -46,7 +46,7 @@ it use GET method to run this function.
 
 http://localhost:8666/block/generateBlock
 
-### This is Example Request for generateBlock (curl)
+#### *This is Example Request for generateBlock (curl)
 ```
 curl --location --request GET 'http://localhost:8666/block/generateBlock'
 ```
@@ -59,7 +59,7 @@ it also use GET method to run this function.
 
 http://localhost:8666/block/mineNewBlock
 
-### This is Example Request for newBlock (curl)
+#### *This is Example Request for newBlock (curl)
 ```
 curl --location --request GET 'http://localhost:8666/block/mineNewBlock'
 ```
@@ -72,7 +72,7 @@ You have to fill out Headers and Body before when you send requests.
 
 (Content-Type(KEY) : application/json(VALUE), Body = raw, json)
 
-### This is Example Request for newTx (curl, POST Method)
+#### *This is Example Request for newTx (curl, POST Method)
 ```
 curl --location --request POST 'http://localhost:8666/block/newtx' \
 --header 'Content-Type: application/json' \
@@ -91,7 +91,7 @@ You have to figure out "currentHash", "data", "index", "previousHash", "proof", 
 
 Use POST Method same as newTx before.
 
-### This is Example Request for validateBlock (curl, POST Method)
+#### *This is Example Request for validateBlock (curl, POST Method)
 
 ```
 curl --location --request POST 'http://localhost:8666/block/validateBlock' \
