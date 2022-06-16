@@ -14,6 +14,8 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 - [newTx](#-newTx-post)
 
+- [validateBlock](#-newBlock)
+
 
 
 
@@ -78,4 +80,21 @@ curl --location --request POST 'http://localhost:8666/block/newtx' \
     "amount" : "number_of_amounts",
     "receiver" : "receiver_name"
 }]'
+```
+
+
+## validateBlock
+
+```
+curl --location --request POST 'http://localhost:8666/block/validateBlock' \
+--data-raw '[
+    {
+        "currentHash": "aad22d5f3bb41eaacda9883106e8770cf9818a710cba5309e11bfd4721dfee6f",
+        "data": "Genesis Block",
+        "index": "0",
+        "previousHash": "0",
+        "proof": "0",
+        "timestamp": "1654828634.695756"
+    }
+]'
 ```
