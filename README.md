@@ -6,6 +6,7 @@ Python Blockchain Implementation for educational purposes (Dept. of Smart Financ
 
 - [getBlockData](#getBlockData)
 
+- [generateBlock](#generateBlock)
 
 - [newTx](#newTx-post)
 
