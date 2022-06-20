@@ -114,3 +114,6 @@ curl --location --request POST 'http://localhost:8666/block/validateBlock' \
 
 ## 🌊 Flow chart Image for getBlockData
 ![initial](https://github.com/SunghwanNam/KopoBlockchain/blob/283eac7a1299875d4ff556ae97afd2aae0e8186b/getBlockData.png)
+
+## 🌊 Flow chart Image for addNodeData
+![Untitled Diagram-Page-8 drawio](https://user-images.githubusercontent.com/103026653/174598167-26169227-3869-4c40-9fb2-385ac397b23a.png)
