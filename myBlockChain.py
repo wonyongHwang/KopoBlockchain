@@ -493,13 +493,14 @@ def broadcastNewBlock(blockchain):
                         for row in reader:
                             if row:
                                 if row[0] == node[0] and row[1] ==node[1]:
-                                    print("connection failed "+row[0]+":"+row[1]+", number of fail "+row[2])
-                                    tmp = row[2]
+                                    row[2] = int(row[2]) + 1    # [# of fail bug patch]  HJ Jung, EC Lim, JH Lee
+                                    print("connection failed "+row[0]+":"+row[1]+", number of fail "+str(row[2]))
+                                    # tmp = row[2]
                                     # too much fail, delete node
-                                    if int(tmp) > g_maximumTry:
+                                    if row[2] > g_maximumTry:   # [# of fail bug patch]  HJ Jung, EC Lim, JH Lee
                                         print(row[0]+":"+row[1]+" deleted from node list because of exceeding the request limit")
                                     else:
-                                        row[2] = int(tmp) + 1
+                                        # row[2] = int(tmp) + 1 # [# of fail bug patch]  HJ Jung, EC Lim, JH Lee
                                         writer.writerow(row)
                                 else:
                                     writer.writerow(row)
