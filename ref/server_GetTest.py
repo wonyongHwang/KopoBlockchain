@@ -27,6 +27,7 @@ class myHandler(BaseHTTPRequestHandler):
             self.wfile.write(bytes("<html><head><title>Title goes here.</title></head>", "utf-8")) #"euc-kr"
             self.wfile.write(bytes("<body><p>This is a test.</p>", "utf-8"))
             self.wfile.write(bytes("<p>You accessed path: %s</p>" % self.path, "utf-8"))
+            self.wfile.write(bytes("<p>Your IP: %s</p>" % self.client_address[0], "utf-8"))
             self.wfile.write(bytes("</body></html>", "utf-8"))
 
         else:
