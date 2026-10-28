@@ -9,7 +9,8 @@ import re
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 import threading
-import cgi
+# [기존 코드: Python 3.13 이상에서 cgi 모듈 제거]
+# import cgi
 import uuid
 from tempfile import NamedTemporaryFile
 import shutil
@@ -579,7 +580,7 @@ def compareMerge(bcDict):
                     tempBlocks.append(bcToValidateForBlock[i])
                 else:
                     return -1
-            # [START] save it to csv 
+            # [START] save it to csv
             # 20190605 / (kyuin Park, jiweon Lim, sunghoon Oh, sol Han )
             # TODO: append 정상여부 검증 필요
             blockchainList = []
@@ -810,7 +811,11 @@ class myHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             if None != re.search('/block/validateBlock/*', self.path):
-                ctype, pdict = cgi.parse_header(self.headers['content-type'])
+                # [기존 코드] cgi.parse_header()는 Python 3.13 이상에서 사용 불가
+                # ctype, pdict = cgi.parse_header(self.headers['content-type'])
+                # [변경] Content-Type에서 MIME 타입(application/json 등)만 직접 추출
+                # Content-Type이 복잡해지면 정식 파서가 유리함
+                ctype = self.headers.get('Content-Type', '').split(';')[0].strip().lower()
                 #print(ctype) #print(pdict)
 
                 if ctype == 'application/json':
@@ -826,7 +831,11 @@ class myHandler(BaseHTTPRequestHandler):
                         tempDict.append("validationResult:abnormal")
                         self.wfile.write(bytes(json.dumps(tempDict), "utf-8"))
             elif None != re.search('/block/newtx', self.path):
-                ctype, pdict = cgi.parse_header(self.headers['content-type'])
+                # [기존 코드] cgi.parse_header()는 Python 3.13 이상에서 사용 불가
+                # ctype, pdict = cgi.parse_header(self.headers['content-type'])
+                # [변경] Content-Type에서 MIME 타입(application/json 등)만 직접 추출
+                # Content-Type이 복잡해지면 정식 파서가 유리함
+                ctype = self.headers.get('Content-Type', '').split(';')[0].strip().lower()
                 if ctype == 'application/json':
                     content_length = int(self.headers['Content-Length'])
                     post_data = self.rfile.read(content_length)
@@ -895,3 +904,4 @@ except (KeyboardInterrupt, Exception) as e:
     print('^C received, shutting down the web server')
     print(e)
     server.socket.close()
+
